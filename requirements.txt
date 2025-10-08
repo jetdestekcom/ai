@@ -107,8 +107,8 @@ mypy==1.7.1
 # ============================================================================
 # Symbolic Reasoning
 # ============================================================================
-pyDatalog==0.17.1  # Prolog-like reasoning
-networkx==3.2.1  # Knowledge graphs
+# pyDatalog==0.17.1  # REMOVED - Not compatible with Python 3.11
+networkx==3.2.1  # Knowledge graphs (for symbolic reasoning)
 
 # ============================================================================
 # Reinforcement Learning (for value learning)
