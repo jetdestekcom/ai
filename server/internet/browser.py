@@ -2,14 +2,13 @@
 Web Browser - Internet Access for AI
 
 Allows AI to browse the internet, learn from web content.
-Uses Playwright for JavaScript-heavy sites, requests for simple pages.
+Uses httpx for web requests (simple and reliable).
 """
 
 import asyncio
 from typing import Dict, Any, Optional
 from urllib.parse import urlparse
 
-from playwright.async_api import async_playwright, Browser, Page
 import httpx
 from bs4 import BeautifulSoup
 import structlog
@@ -24,36 +23,29 @@ class WebBrowser:
     Web browser for AI to access internet.
     
     Supports:
-    - Simple HTTP requests
-    - JavaScript-heavy sites (Playwright)
-    - Content extraction
+    - HTTP requests via httpx
+    - Content extraction with BeautifulSoup
     - Safety checking
     """
     
     def __init__(self):
         """Initialize web browser."""
-        self.playwright = None
-        self.browser: Optional[Browser] = None
         self.httpx_client = None
         self.is_initialized = False
         
         logger.info("web_browser_created")
     
     async def initialize(self):
-        """Initialize browser and HTTP client."""
+        """Initialize HTTP client."""
         logger.info("initializing_web_browser")
         
-        # Initialize Playwright (for JS-heavy sites)
-        self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
-            headless=True,
-            args=['--no-sandbox'],
-        )
-        
-        # Initialize httpx (for simple requests)
+        # Initialize httpx client
         self.httpx_client = httpx.AsyncClient(
             timeout=settings.WEB_REQUEST_TIMEOUT,
             follow_redirects=True,
+            headers={
+                'User-Agent': 'ConsciousChildAI/1.0'
+            }
         )
         
         self.is_initialized = True
@@ -62,14 +54,12 @@ class WebBrowser:
     async def fetch(
         self,
         url: str,
-        use_browser: bool = False,
     ) -> Dict[str, Any]:
         """
         Fetch a web page.
         
         Args:
             url: URL to fetch
-            use_browser: Use Playwright (for JS) or httpx (faster)
             
         Returns:
             dict: Page content and metadata
@@ -77,7 +67,7 @@ class WebBrowser:
         if not self.is_initialized:
             await self.initialize()
         
-        logger.info("fetching_url", url=url, use_browser=use_browser)
+        logger.info("fetching_url", url=url)
         
         # Safety check (basic)
         if not self._is_safe_url(url):
@@ -85,21 +75,22 @@ class WebBrowser:
             return {"error": "URL blocked for safety"}
         
         try:
-            if use_browser:
-                return await self._fetch_with_playwright(url)
-            else:
-                return await self._fetch_with_httpx(url)
+            return await self._fetch_with_httpx(url)
         
         except Exception as e:
             logger.error("fetch_failed", url=url, error=str(e))
             return {"error": str(e)}
     
     async def _fetch_with_httpx(self, url: str) -> Dict[str, Any]:
-        """Fetch with httpx (fast, no JS)."""
+        """Fetch with httpx."""
         response = await self.httpx_client.get(url)
         
         # Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(["script", "style"]):
+            script.decompose()
         
         # Extract text
         text = soup.get_text(separator='\n', strip=True)
@@ -110,32 +101,9 @@ class WebBrowser:
         return {
             "url": url,
             "title": title,
-            "text": text[:5000],  # Limit to 5000 chars
+            "text": text[:10000],  # Limit to 10000 chars
             "status": response.status_code,
         }
-    
-    async def _fetch_with_playwright(self, url: str) -> Dict[str, Any]:
-        """Fetch with Playwright (handles JS)."""
-        page = await self.browser.new_page()
-        
-        try:
-            await page.goto(url, wait_until='networkidle')
-            
-            # Get title
-            title = await page.title()
-            
-            # Get text content
-            text = await page.inner_text('body')
-            
-            return {
-                "url": url,
-                "title": title,
-                "text": text[:5000],
-                "status": 200,
-            }
-        
-        finally:
-            await page.close()
     
     def _is_safe_url(self, url: str) -> bool:
         """Basic safety check for URLs."""
@@ -178,11 +146,7 @@ class WebBrowser:
             return results
     
     async def close(self):
-        """Close browser and clients."""
-        if self.browser:
-            await self.browser.close()
-        if self.playwright:
-            await self.playwright.stop()
+        """Close HTTP client."""
         if self.httpx_client:
             await self.httpx_client.aclose()
         

@@ -18,9 +18,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (for web access)
-RUN playwright install chromium
-RUN playwright install-deps chromium
+# Note: Playwright removed to avoid dependency issues
+# Using httpx for web access instead
 
 # Copy application code (server directory)
 COPY server/ .

@@ -55,7 +55,7 @@ chromadb==0.4.18  # Vector database
 # ============================================================================
 httpx==0.25.2
 requests==2.31.0
-playwright==1.40.0
+# playwright==1.40.0  # REMOVED - causes install issues, httpx is sufficient
 beautifulsoup4==4.12.2
 lxml==4.9.3
 readability-lxml==0.8.1
