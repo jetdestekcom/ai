@@ -1,0 +1,49 @@
+# Docker build context - exclude these from build
+
+# AI Models (too large, will be volume-mounted)
+models/
+*.gguf
+*.bin
+*.pt
+*.pth
+*.safetensors
+
+# Data files
+data/
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+
+# Backups
+backups/
+*.tar.gz
+*.sql
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Cache
+.cache/
+*.cache
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+tmp/
+temp/
+
