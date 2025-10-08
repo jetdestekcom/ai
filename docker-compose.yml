@@ -106,20 +106,20 @@ services:
     restart: unless-stopped
 
   # =========================================================================
-  # Nginx - Reverse proxy with SSL
+  # Nginx - Reverse proxy with SSL (DISABLED - cPanel uses port 80/443)
   # =========================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: conscious_ai_nginx
-    volumes:
-      - ./deployment/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./deployment/ssl:/etc/nginx/ssl:ro
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - ai_core
-    restart: unless-stopped
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: conscious_ai_nginx
+  #   volumes:
+  #     - ./deployment/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./deployment/ssl:/etc/nginx/ssl:ro
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - ai_core
+  #   restart: unless-stopped
 
 # ===========================================================================
 # Volumes - Persistent data storage
