@@ -98,8 +98,18 @@ echo "Step 6: SELinux Configuration"
 echo "-----------------------------"
 # AlmaLinux has SELinux enabled by default
 # Set to permissive for Docker (or configure properly)
-setenforce 0
-sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+
+# Check if SELinux is enabled
+if [ "$(getenforce 2>/dev/null)" == "Enforcing" ]; then
+    echo "SELinux is enforcing, setting to permissive..."
+    setenforce 0
+    sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+    echo "✓ SELinux set to permissive"
+elif [ "$(getenforce 2>/dev/null)" == "Permissive" ]; then
+    echo "✓ SELinux already permissive"
+else
+    echo "✓ SELinux is disabled (this is fine)"
+fi
 
 echo ""
 echo "Step 7: Create Project Directory"
