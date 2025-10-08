@@ -15,16 +15,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# Copy from parent directory
-COPY ../requirements.txt ./requirements.txt
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers (for web access)
 RUN playwright install chromium
 RUN playwright install-deps chromium
 
-# Copy application code
-COPY . .
+# Copy application code (server directory)
+COPY server/ .
 
 # Create necessary directories
 RUN mkdir -p models/llm models/whisper models/tts models/embeddings backups logs
