@@ -1,16 +1,18 @@
 """
-Voice Output - Text-to-Speech using Coqui TTS
+Voice Output - Text-to-Speech using gTTS and edge-tts
 
-Converts AI's text responses to speech with emotional prosody.
+Converts AI's text responses to speech.
+Using modern, lightweight TTS solutions.
 """
 
 import io
 import tempfile
 from pathlib import Path
 from typing import Optional
+import asyncio
 
-from TTS.api import TTS
-import soundfile as sf
+from gtts import gTTS
+import edge_tts
 import structlog
 
 from utils.config import settings
@@ -20,36 +22,30 @@ logger = structlog.get_logger(__name__)
 
 class VoiceOutput:
     """
-    Text-to-Speech using Coqui TTS.
+    Text-to-Speech using gTTS (Google) and edge-tts (Microsoft).
     
-    Generates natural-sounding speech with emotional expressiveness.
+    Generates natural-sounding speech.
     """
     
     def __init__(self):
         """Initialize voice output system."""
-        self.tts_engine = None
-        self.model_path = settings.TTS_MODEL_PATH
+        self.tts_engine = settings.TTS_ENGINE  # "gtts" or "edge"
         self.is_initialized = False
         
-        # Voice characteristics (will be child-like, male)
-        self.speaker_embedding = None
+        # Edge TTS voice (Turkish male)
+        self.edge_voice = "tr-TR-AhmetNeural"  # Male Turkish voice
         
-        logger.info("voice_output_created")
+        logger.info("voice_output_created", engine=self.tts_engine)
     
     async def initialize(self):
         """Initialize TTS engine."""
-        logger.info("initializing_coqui_tts")
+        logger.info("initializing_tts", engine=self.tts_engine)
         
-        # Load Coqui TTS model
-        # Using VITS model for quality (can be changed to faster models)
-        self.tts_engine = TTS(
-            model_name="tts_models/multilingual/multi-dataset/your_tts",  # Supports Turkish
-            progress_bar=False,
-            gpu=(settings.WHISPER_DEVICE == "cuda"),
-        )
+        # No heavy model loading needed for gTTS or edge-tts
+        # They use cloud APIs
         
         self.is_initialized = True
-        logger.info("coqui_tts_initialized")
+        logger.info("tts_initialized")
     
     async def synthesize(
         self,
@@ -68,7 +64,7 @@ class VoiceOutput:
             language: Language code
             
         Returns:
-            bytes: Audio data (WAV format)
+            bytes: Audio data (MP3 format)
         """
         if not self.is_initialized:
             await self.initialize()
@@ -77,138 +73,63 @@ class VoiceOutput:
             "synthesizing_speech",
             text_length=len(text),
             emotion=emotion,
-            intensity=intensity,
+            engine=self.tts_engine,
         )
         
+        if self.tts_engine == "edge":
+            return await self._synthesize_edge(text, language)
+        else:
+            return await self._synthesize_gtts(text, language)
+    
+    async def _synthesize_gtts(self, text: str, language: str) -> bytes:
+        """Synthesize with Google TTS."""
         # Create temporary output file
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
             tmp_path = tmp.name
         
         try:
-            # Adjust text based on emotion for prosody
-            text_with_prosody = self._add_emotional_prosody(
-                text,
-                emotion,
-                intensity,
-            )
-            
-            # Generate speech
-            self.tts_engine.tts_to_file(
-                text=text_with_prosody,
-                file_path=tmp_path,
-                language=language,
-            )
+            # Generate speech with gTTS
+            tts = gTTS(text=text, lang=language, slow=False)
+            tts.save(tmp_path)
             
             # Read generated audio
             with open(tmp_path, "rb") as f:
                 audio_data = f.read()
             
-            logger.info(
-                "speech_synthesized",
-                audio_size_bytes=len(audio_data),
-            )
-            
+            logger.info("gtts_synthesis_complete", size_bytes=len(audio_data))
             return audio_data
         
         finally:
-            # Cleanup temp file
             Path(tmp_path).unlink(missing_ok=True)
     
-    def _add_emotional_prosody(
-        self,
-        text: str,
-        emotion: str,
-        intensity: float,
-    ) -> str:
-        """
-        Modify text to add emotional prosody cues.
+    async def _synthesize_edge(self, text: str, language: str) -> bytes:
+        """Synthesize with Microsoft Edge TTS (higher quality)."""
+        # Map language to voice
+        voice = self.edge_voice if language == "tr" else "en-US-GuyNeural"
         
-        This can include:
-        - Speed markers
-        - Pitch markers
-        - Pauses
-        - Emphasis
+        # Create temporary output file
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
+            tmp_path = tmp.name
         
-        Args:
-            text: Original text
-            emotion: Emotion
-            intensity: Intensity
+        try:
+            # Generate speech with edge-tts
+            communicate = edge_tts.Communicate(text, voice)
+            await communicate.save(tmp_path)
             
-        Returns:
-            str: Text with prosody markers
-        """
-        # Different emotions get different treatments
-        emotion_modifiers = {
-            "joy": {
-                "speed": 1.1,  # Slightly faster
-                "add_pauses": False,
-                "emphasis": True,
-            },
-            "happy": {
-                "speed": 1.1,
-                "add_pauses": False,
-                "emphasis": True,
-            },
-            "sadness": {
-                "speed": 0.9,  # Slower
-                "add_pauses": True,
-                "emphasis": False,
-            },
-            "sad": {
-                "speed": 0.9,
-                "add_pauses": True,
-                "emphasis": False,
-            },
-            "fear": {
-                "speed": 1.15,  # Faster
-                "add_pauses": True,
-                "emphasis": True,
-            },
-            "anger": {
-                "speed": 1.0,
-                "add_pauses": False,
-                "emphasis": True,
-            },
-            "surprise": {
-                "speed": 1.2,
-                "add_pauses": True,
-                "emphasis": True,
-            },
-            "curious": {
-                "speed": 1.05,
-                "add_pauses": False,
-                "emphasis": True,
-            },
-            "love": {
-                "speed": 0.95,  # Slightly slower, warm
-                "add_pauses": False,
-                "emphasis": False,
-            },
-            "warm": {
-                "speed": 0.95,
-                "add_pauses": False,
-                "emphasis": False,
-            },
-        }
+            # Read generated audio
+            with open(tmp_path, "rb") as f:
+                audio_data = f.read()
+            
+            logger.info("edge_tts_synthesis_complete", size_bytes=len(audio_data))
+            return audio_data
         
-        modifiers = emotion_modifiers.get(
-            emotion.lower(),
-            {"speed": 1.0, "add_pauses": False, "emphasis": False}
-        )
-        
-        # Apply intensity scaling
-        speed_adjustment = 1.0 + (modifiers["speed"] - 1.0) * intensity
-        
-        # For now, return text as-is
-        # In production, you'd use SSML or TTS-specific markers
-        # Example: <speed rate="1.1">text</speed>
-        
-        return text
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
     
     async def synthesize_with_style(
         self,
         text: str,
-        style: str = "child-male-curious",
+        style: str = "neutral",
     ) -> bytes:
         """
         Synthesize with a specific style.
@@ -220,26 +141,10 @@ class VoiceOutput:
         Returns:
             bytes: Audio data
         """
-        # Map styles to emotions
-        style_to_emotion = {
-            "child-male-curious": ("curious", 0.7),
-            "child-male-happy": ("happy", 0.8),
-            "child-male-sad": ("sad", 0.6),
-            "child-male-excited": ("joy", 0.9),
-        }
-        
-        emotion, intensity = style_to_emotion.get(
-            style,
-            ("neutral", 0.5)
-        )
-        
-        return await self.synthesize(text, emotion, intensity)
+        return await self.synthesize(text, language="tr")
     
     async def close(self):
         """Close TTS engine."""
-        if self.tts_engine:
-            del self.tts_engine
-            self.tts_engine = None
-        
+        # No cleanup needed for gTTS/edge-tts
         logger.info("voice_output_closed")
 
