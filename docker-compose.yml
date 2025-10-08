@@ -83,8 +83,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      chromadb:
-        condition: service_healthy
+      # chromadb:
+      #   condition: service_healthy  # Disabled - optional service
     environment:
       - POSTGRES_HOST=postgres
       - REDIS_HOST=redis
