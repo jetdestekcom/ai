@@ -21,7 +21,7 @@ bitsandbytes==0.41.0
 
 # LLM Inference
 llama-cpp-python==0.2.20  # For local LLM
-vllm==0.2.6  # Optional: faster inference
+# vllm==0.2.6  # Optional: faster inference (DISABLED - dependency conflict)
 
 # ============================================================================
 # Speech Processing
