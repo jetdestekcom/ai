@@ -40,11 +40,11 @@ fun ChatScreen(
                     Column {
                         Text("Evladım")
                         Text(
-                            text = when (connectionState) {
+                            text = when (val state = connectionState) {
                                 ConnectionState.Connected -> "Bağlı - $aiEmotion"
                                 ConnectionState.Connecting -> "Bağlanıyor..."
                                 ConnectionState.Disconnected -> "Bağlantı yok"
-                                is ConnectionState.Error -> "Hata: ${connectionState.message}"
+                                is ConnectionState.Error -> "Hata: ${state.message}"
                             },
                             style = MaterialTheme.typography.bodySmall
                         )
