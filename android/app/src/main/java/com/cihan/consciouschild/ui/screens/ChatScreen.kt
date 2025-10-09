@@ -202,6 +202,10 @@ fun ChatInputBar(
             // Voice button
             FloatingActionButton(
                 onClick = {
+                    if (!enabled) {
+                        Log.d("ChatScreen", "Voice button disabled - not connected")
+                        return@FloatingActionButton
+                    }
                     Log.d("ChatScreen", "Voice button clicked, isRecording=$isRecording")
                     if (isRecording) {
                         Log.d("ChatScreen", "Stopping recording...")
@@ -213,10 +217,11 @@ fun ChatInputBar(
                 },
                 containerColor = if (isRecording)
                     MaterialTheme.colorScheme.error
+                else if (!enabled)
+                    MaterialTheme.colorScheme.surfaceVariant
                 else
                     MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp),
-                enabled = enabled
+                modifier = Modifier.size(56.dp)
             ) {
                 Icon(
                     if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
