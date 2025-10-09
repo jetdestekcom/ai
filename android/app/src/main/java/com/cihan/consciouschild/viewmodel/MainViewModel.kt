@@ -124,16 +124,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     fun startRecording() {
         _isRecording.value = true
-        voiceRecorder.startRecording()
+        try {
+            voiceRecorder.startRecording()
+        } catch (e: Exception) {
+            _isRecording.value = false
+            // Log error but don't crash
+        }
     }
     
     fun stopRecording() {
-        val audioData = voiceRecorder.stopRecording()
         _isRecording.value = false
-        
-        // Send voice to server
-        viewModelScope.launch {
-            webSocketClient.sendVoiceMessage(audioData)
+        try {
+            val audioData = voiceRecorder.stopRecording()
+            
+            // Send voice to server
+            viewModelScope.launch {
+                webSocketClient.sendVoiceMessage(audioData)
+            }
+        } catch (e: Exception) {
+            // Log error but don't crash
         }
     }
     
