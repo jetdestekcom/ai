@@ -41,7 +41,14 @@ class VoiceInput:
     
     async def initialize(self):
         """Load Whisper model."""
-        logger.info("loading_whisper_model", size=self.model_size)
+        import torch
+        
+        # Auto-detect device (CPU if no CUDA)
+        if self.device == "cuda" and not torch.cuda.is_available():
+            logger.warning("cuda_not_available_falling_back_to_cpu")
+            self.device = "cpu"
+        
+        logger.info("loading_whisper_model", size=self.model_size, device=self.device)
         
         # Load model
         self.model = whisper.load_model(
@@ -50,7 +57,7 @@ class VoiceInput:
         )
         
         self.is_initialized = True
-        logger.info("whisper_model_loaded")
+        logger.info("whisper_model_loaded", device=self.device)
     
     async def transcribe(
         self,
