@@ -47,7 +47,11 @@ class SemanticMemory:
         
         # Database connection pool
         self.db_pool = await asyncpg.create_pool(
-            settings.DATABASE_URL,
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            database=settings.POSTGRES_DB,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
             min_size=2,
             max_size=10,
         )
