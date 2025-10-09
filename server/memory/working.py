@@ -39,12 +39,18 @@ class WorkingMemory:
         """Initialize Redis connection."""
         logger.info("initializing_working_memory")
         
-        # Connect to Redis
-        self.redis_client = await redis.from_url(
-            settings.REDIS_URL,
-            encoding="utf-8",
-            decode_responses=True,
-        )
+        # Connect to Redis (using named parameters for reliability)
+        redis_kwargs = {
+            "host": settings.REDIS_HOST,
+            "port": settings.REDIS_PORT,
+            "encoding": "utf-8",
+            "decode_responses": True,
+        }
+        
+        if settings.REDIS_PASSWORD:
+            redis_kwargs["password"] = settings.REDIS_PASSWORD
+        
+        self.redis_client = redis.Redis(**redis_kwargs)
         
         # Test connection
         await self.redis_client.ping()
