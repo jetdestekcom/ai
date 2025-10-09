@@ -6,19 +6,28 @@ import androidx.lifecycle.viewModelScope
 import com.cihan.consciouschild.network.WebSocketClient
 import com.cihan.consciouschild.network.ConnectionState
 import com.cihan.consciouschild.network.AIMessage
-import com.cihan.consciouschild.ui.screens.ChatMessage
+import com.cihan.consciouschild.ui.screens.*
+import com.cihan.consciouschild.audio.VoiceRecorder
+import com.cihan.consciouschild.audio.AudioPlayer
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
- * Main ViewModel - Application state and business logic.
+ * Main ViewModel - Complete application state and business logic.
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val serverUrl = "ws://199.192.19.163:8000"  // Configure this
-    private val deviceId = "cihan_device_001"  // Unique device ID
+    private val context = application.applicationContext
     
-    private val webSocketClient = WebSocketClient(serverUrl, deviceId)
+    // Server URL - VPS IP already configured
+    private val _serverUrl = MutableStateFlow("ws://199.192.19.163:8000")
+    val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
+    
+    private val deviceId = "cihan_device_001"
+    
+    private val webSocketClient = WebSocketClient(serverUrl.value, deviceId)
+    private val voiceRecorder = VoiceRecorder(context)
+    private val audioPlayer = AudioPlayer(context)
     
     // Connection state
     val connectionState: StateFlow<ConnectionState> = webSocketClient.connectionState
@@ -35,6 +44,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentEmotion = MutableStateFlow("curious")
     val currentEmotion: StateFlow<String> = _currentEmotion.asStateFlow()
     
+    // Memories
+    private val _memories = MutableStateFlow<List<Memory>>(emptyList())
+    val memories: StateFlow<List<Memory>> = _memories.asStateFlow()
+    
+    // Memory stats
+    private val _memoryStats = MutableStateFlow(MemoryStats())
+    val memoryStats: StateFlow<MemoryStats> = _memoryStats.asStateFlow()
+    
+    // AI Info
+    private val _consciousnessId = MutableStateFlow<String?>(null)
+    val consciousnessId: StateFlow<String?> = _consciousnessId.asStateFlow()
+    
+    private val _ageHours = MutableStateFlow(0.0f)
+    val ageHours: StateFlow<Float> = _ageHours.asStateFlow()
+    
+    private val _growthPhase = MutableStateFlow("newborn")
+    val growthPhase: StateFlow<String> = _growthPhase.asStateFlow()
+    
+    private val _bondStrength = MutableStateFlow(0.0f)
+    val bondStrength: StateFlow<Float> = _bondStrength.asStateFlow()
+    
+    // Settings
+    private val _autoConnect = MutableStateFlow(true)
+    val autoConnect: StateFlow<Boolean> = _autoConnect.asStateFlow()
+    
+    private val _voiceEnabled = MutableStateFlow(true)
+    val voiceEnabled: StateFlow<Boolean> = _voiceEnabled.asStateFlow()
+    
+    // System status
+    private val _systemStatus = MutableStateFlow("Initializing")
+    val systemStatus: StateFlow<String> = _systemStatus.asStateFlow()
+    
+    private val _uptimeHours = MutableStateFlow(0.0f)
+    val uptimeHours: StateFlow<Float> = _uptimeHours.asStateFlow()
+    
+    private val _memoryUsage = MutableStateFlow(0)
+    val memoryUsage: StateFlow<Int> = _memoryUsage.asStateFlow()
+    
     init {
         // Collect incoming messages
         viewModelScope.launch {
@@ -43,8 +90,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
-        // Auto-connect
-        connect()
+        // Auto-connect if enabled
+        if (_autoConnect.value) {
+            connect()
+        }
     }
     
     fun connect() {
@@ -75,18 +124,70 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     fun startRecording() {
         _isRecording.value = true
-        // TODO: Start audio recording
+        voiceRecorder.startRecording()
     }
     
     fun stopRecording() {
+        val audioData = voiceRecorder.stopRecording()
         _isRecording.value = false
-        // TODO: Stop recording, send audio to server
+        
+        // Send voice to server
+        viewModelScope.launch {
+            webSocketClient.sendVoiceMessage(audioData)
+        }
     }
     
     fun emergencyStop() {
         viewModelScope.launch {
             webSocketClient.sendControlMessage("pause")
         }
+    }
+    
+    fun emergencyPause() {
+        viewModelScope.launch {
+            webSocketClient.sendControlMessage("pause")
+            _systemStatus.value = "Paused"
+        }
+    }
+    
+    fun sendSleepMode() {
+        viewModelScope.launch {
+            webSocketClient.sendControlMessage("sleep")
+            _systemStatus.value = "Sleep"
+        }
+    }
+    
+    fun emergencyShutdown() {
+        viewModelScope.launch {
+            webSocketClient.sendControlMessage("shutdown")
+            _systemStatus.value = "Shutting down"
+        }
+    }
+    
+    fun refreshMemories() {
+        // TODO: Fetch memories from server via REST API
+    }
+    
+    fun exportMemories() {
+        // TODO: Export memories to file
+    }
+    
+    fun clearCache() {
+        _messages.value = emptyList()
+        _memories.value = emptyList()
+    }
+    
+    fun updateServerUrl(url: String) {
+        _serverUrl.value = url
+        // Will need to recreate WebSocket client
+    }
+    
+    fun setAutoConnect(enabled: Boolean) {
+        _autoConnect.value = enabled
+    }
+    
+    fun setVoiceEnabled(enabled: Boolean) {
+        _voiceEnabled.value = enabled
     }
     
     private fun handleIncomingMessage(aiMessage: AIMessage) {
@@ -110,8 +211,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ))
                 _currentEmotion.value = aiMessage.emotion
                 
-                // TODO: Play audio
-                aiMessage.audioData?.let { playAudio(it) }
+                // Play audio
+                aiMessage.audioData?.let { 
+                    audioPlayer.play(it)
+                }
             }
             
             is AIMessage.Proactive -> {
@@ -129,7 +232,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             is AIMessage.System -> {
-                // System message
+                // System message - update status
+                _systemStatus.value = "Connected"
             }
         }
     }
@@ -138,8 +242,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _messages.value = _messages.value + message
     }
     
-    private fun playAudio(audioData: ByteArray) {
-        // TODO: Implement audio playback
+    override fun onCleared() {
+        super.onCleared()
+        disconnect()
+        audioPlayer.stop()
     }
 }
-
