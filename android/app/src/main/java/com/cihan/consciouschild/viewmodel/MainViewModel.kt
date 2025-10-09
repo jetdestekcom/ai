@@ -1,6 +1,7 @@
 package com.cihan.consciouschild.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.cihan.consciouschild.network.WebSocketClient
@@ -123,25 +124,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun startRecording() {
+        Log.d("MainViewModel", "startRecording() called")
         _isRecording.value = true
         try {
             voiceRecorder.startRecording()
+            Log.d("MainViewModel", "Recording started successfully")
         } catch (e: Exception) {
+            Log.e("MainViewModel", "Failed to start recording", e)
             _isRecording.value = false
             // Log error but don't crash
         }
     }
     
     fun stopRecording() {
+        Log.d("MainViewModel", "stopRecording() called")
         _isRecording.value = false
         try {
             val audioData = voiceRecorder.stopRecording()
+            Log.d("MainViewModel", "Recording stopped, audio size: ${audioData.size} bytes")
             
             // Send voice to server
             viewModelScope.launch {
                 webSocketClient.sendVoiceMessage(audioData)
+                Log.d("MainViewModel", "Voice message sent to server")
             }
         } catch (e: Exception) {
+            Log.e("MainViewModel", "Failed to stop recording", e)
             // Log error but don't crash
         }
     }

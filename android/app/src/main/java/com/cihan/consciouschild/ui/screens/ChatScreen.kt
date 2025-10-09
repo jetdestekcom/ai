@@ -1,5 +1,6 @@
 package com.cihan.consciouschild.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -201,13 +202,21 @@ fun ChatInputBar(
             // Voice button
             FloatingActionButton(
                 onClick = {
-                    if (isRecording) onStopRecording() else onStartRecording()
+                    Log.d("ChatScreen", "Voice button clicked, isRecording=$isRecording")
+                    if (isRecording) {
+                        Log.d("ChatScreen", "Stopping recording...")
+                        onStopRecording()
+                    } else {
+                        Log.d("ChatScreen", "Starting recording...")
+                        onStartRecording()
+                    }
                 },
                 containerColor = if (isRecording)
                     MaterialTheme.colorScheme.error
                 else
                     MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(56.dp),
+                enabled = enabled
             ) {
                 Icon(
                     if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
