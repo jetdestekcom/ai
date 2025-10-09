@@ -40,10 +40,10 @@ fun ChatScreen(
                         Text("Evladım")
                         Text(
                             text = when (connectionState) {
-                                is ConnectionState.Connected -> "Bağlı - $aiEmotion"
-                                is ConnectionState.Connecting -> "Bağlanıyor..."
-                                is ConnectionState.Disconnected -> "Bağlantı yok"
-                                is ConnectionState.Error -> "Hata"
+                                ConnectionState.Connected -> "Bağlı - $aiEmotion"
+                                ConnectionState.Connecting -> "Bağlanıyor..."
+                                ConnectionState.Disconnected -> "Bağlantı yok"
+                                is ConnectionState.Error -> "Hata: ${connectionState.message}"
                             },
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -67,7 +67,7 @@ fun ChatScreen(
                 onStartRecording = { viewModel.startRecording() },
                 onStopRecording = { viewModel.stopRecording() },
                 onSendText = { text -> viewModel.sendTextMessage(text) },
-                enabled = connectionState is ConnectionState.Connected
+                enabled = connectionState == ConnectionState.Connected
             )
         }
     ) { paddingValues ->
