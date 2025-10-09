@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.cihan.consciouschild.network.ConnectionState
 import androidx.compose.ui.unit.dp
 import com.cihan.consciouschild.viewmodel.MainViewModel
 
