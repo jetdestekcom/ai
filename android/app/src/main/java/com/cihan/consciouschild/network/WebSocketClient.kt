@@ -2,7 +2,7 @@ package com.cihan.consciouschild.network
 
 import android.util.Log
 import io.ktor.client.*
-import io.ktor.client.engine.android.*
+import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
@@ -20,7 +20,7 @@ class WebSocketClient(
 ) {
     private val tag = "WebSocketClient"
     
-    private val client = HttpClient(Android) {
+    private val client = HttpClient(CIO) {
         install(WebSockets)
     }
     
