@@ -15,7 +15,7 @@ pydantic-settings==2.1.0
 # ============================================================================
 torch==2.1.0
 transformers==4.35.2
-sentence-transformers==2.2.2
+sentence-transformers==2.5.1
 accelerate==0.25.0
 bitsandbytes==0.41.0
 
