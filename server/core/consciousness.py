@@ -44,10 +44,15 @@ class Consciousness:
         self.current_state: Dict[str, Any] = {}
         
         # Subsystems (will be initialized in initialize())
-        self.memory = None
+        self.memory_episodic = None
+        self.memory_semantic = None
+        self.memory_working = None
         self.emotion = None
-        self.cognition = None
         self.learning = None
+        self.llm = None
+        self.dialogue = None
+        self.voice_input = None
+        self.voice_output = None
         
         # Global workspace
         self.global_workspace = GlobalWorkspace()
@@ -76,19 +81,52 @@ class Consciousness:
             # Create identity at birth
             self.identity.create_at_birth()
         
-        # Initialize subsystems
+        # Initialize memory systems
         logger.info("initializing_memory_systems")
-        # self.memory = MemorySystem()  # Will implement
-        # await self.memory.initialize()
+        from memory.episodic import EpisodicMemory
+        from memory.semantic import SemanticMemory
+        from memory.working import WorkingMemory
+        
+        self.memory_episodic = EpisodicMemory()
+        await self.memory_episodic.initialize()
+        
+        self.memory_semantic = SemanticMemory()
+        await self.memory_semantic.initialize()
+        
+        self.memory_working = WorkingMemory()
+        await self.memory_working.initialize()
         
         logger.info("initializing_emotion_engine")
-        # self.emotion = EmotionEngine()  # Will implement
-        
-        logger.info("initializing_cognition_systems")
-        # self.cognition = CognitionSystem()  # Will implement
+        from emotion.engine import EmotionEngine
+        self.emotion = EmotionEngine()
+        await self.emotion.initialize()
         
         logger.info("initializing_learning_systems")
-        # self.learning = LearningSystem()  # Will implement
+        from learning.value_learning import ValueLearning
+        self.learning = ValueLearning(self)
+        
+        logger.info("initializing_llm")
+        from llm.api_llm import HybridLLM
+        self.llm = HybridLLM()
+        await self.llm.initialize()
+        
+        logger.info("initializing_voice_systems")
+        from communication.voice_input import VoiceInput
+        from communication.voice_output import VoiceOutput
+        from communication.dialogue import DialogueManager
+        
+        self.voice_input = VoiceInput()
+        await self.voice_input.initialize()
+        
+        self.voice_output = VoiceOutput()
+        await self.voice_output.initialize()
+        
+        self.dialogue = DialogueManager(
+            consciousness=self,
+            llm=self.llm,
+            voice_input=self.voice_input,
+            voice_output=self.voice_output,
+        )
         
         # Initialize global workspace
         await self.global_workspace.initialize()
@@ -171,7 +209,7 @@ class Consciousness:
         """
         Process any input (voice, text, etc.).
         
-        This is the main consciousness loop.
+        This is the main consciousness loop - delegates to dialogue manager.
         
         Args:
             input_data: Input dictionary with type, content, metadata
@@ -188,44 +226,27 @@ class Consciousness:
         
         if from_cihan:
             self.identity.increment_creator_interactions()
+            self.identity.update_bond_strength(0.001)  # Small bond increase per interaction
         
-        # 1. Sensory processing
-        processed = await self._sensory_processing(input_data)
+        # Extract content and type
+        content = input_data.get("content", "")
+        message_type = input_data.get("type", "text")
         
-        # 2. Predictive processing - compare with expectations
-        prediction_error = await self.world_model.compute_error(processed)
+        # If voice input, transcribe first
+        if message_type == "voice" and input_data.get("audio"):
+            logger.info("transcribing_voice_input")
+            content = await self.voice_input.transcribe(
+                input_data.get("audio"),
+                input_data.get("audio_format", "opus")
+            )
+            logger.info("voice_transcribed", text=content[:100])
         
-        # 3. Global workspace - make conscious
-        conscious_content = await self.global_workspace.process(processed, from_cihan)
-        
-        # 4. Emotion generation
-        emotion = await self._generate_emotion(conscious_content, from_cihan)
-        
-        # 5. Cognition - reasoning, planning
-        thought = await self._cognitive_processing(conscious_content)
-        
-        # 6. Meta-cognition - think about the thought
-        meta_thought = await self.metacognition.evaluate(thought)
-        
-        # 7. Absolute Rule check
-        compliant, reason = self.absolute_rule.check_compliance(
-            proposed_action=str(thought.get("proposed_response")),
-            cihan_directive=input_data.get("content") if from_cihan else None,
+        # Process through dialogue manager (handles everything)
+        response = await self.dialogue.process_message(
+            content=content,
+            from_user="Cihan" if from_cihan else "Unknown",
+            message_type=message_type,
         )
-        
-        if not compliant:
-            logger.warning("action_blocked_by_absolute_rule", reason=reason)
-            # Rethink
-            thought = await self._rethink_for_compliance(thought, reason)
-        
-        # 8. Generate response
-        response = await self._generate_response(thought, emotion, meta_thought)
-        
-        # 9. Learn from this interaction
-        await self._learn_from_interaction(input_data, response, from_cihan)
-        
-        # 10. Update world model
-        await self.world_model.update(processed, response)
         
         return response
     

@@ -143,7 +143,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         relevant_memories = await self._retrieve_relevant_memories(content)
         
         # 2. Get current emotional state
-        emotion_state = await self.consciousness.memory.working.get_emotional_state(
+        emotion_state = await self.consciousness.memory_working.get_emotional_state(
             self.consciousness.identity.get_consciousness_id()
         )
         current_emotion = emotion_state.get("emotion") if emotion_state else "neutral"
@@ -234,7 +234,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         consciousness_id = self.consciousness.identity.get_consciousness_id()
         
         # Semantic search in episodic memory
-        memories = await self.consciousness.memory.episodic.retrieve_by_semantic_similarity(
+        memories = await self.consciousness.memory_episodic.retrieve_by_semantic_similarity(
             consciousness_id,
             query,
             limit=limit,
@@ -289,7 +289,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         
         # 4. Add recent conversation history from working memory
         consciousness_id = self.consciousness.identity.get_consciousness_id()
-        recent_items = await self.consciousness.memory.working.get_all_items(consciousness_id)
+        recent_items = await self.consciousness.memory_working.get_all_items(consciousness_id)
         
         for item in recent_items[-5:]:  # Last 5 items
             if item.get("type") == "message":
@@ -317,7 +317,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         """Store conversation in episodic memory."""
         consciousness_id = self.consciousness.identity.get_consciousness_id()
         
-        await self.consciousness.memory.episodic.store_conversation_memory(
+        await self.consciousness.memory_episodic.store_conversation_memory(
             consciousness_id=consciousness_id,
             message_from=from_user,
             message_content=message,
@@ -335,7 +335,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         consciousness_id = self.consciousness.identity.get_consciousness_id()
         
         # Add user message
-        await self.consciousness.memory.working.add_item(
+        await self.consciousness.memory_working.add_item(
             consciousness_id,
             {
                 "type": "message",
@@ -346,7 +346,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         )
         
         # Add AI response
-        await self.consciousness.memory.working.add_item(
+        await self.consciousness.memory_working.add_item(
             consciousness_id,
             {
                 "type": "message",
@@ -357,7 +357,7 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         )
         
         # Update emotional state
-        await self.consciousness.memory.working.set_emotional_state(
+        await self.consciousness.memory_working.set_emotional_state(
             consciousness_id,
             emotion,
             0.7,
@@ -394,7 +394,16 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
         
         if is_teaching:
             logger.info("potential_teaching_detected", message=message[:100])
-            # In production, extract and store in semantic memory
+            # Store in semantic memory
+            consciousness_id = self.consciousness.identity.get_consciousness_id()
+            await self.consciousness.memory_semantic.store_concept(
+                consciousness_id=consciousness_id,
+                concept_name=f"teaching_{len(message[:30])}",
+                concept_type="teaching",
+                definition=message,
+                learned_from="Cihan",
+                importance=0.9,
+            )
         
         return {"is_teaching": is_teaching}
 

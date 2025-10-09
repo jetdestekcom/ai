@@ -172,24 +172,26 @@ async def process_text_message(content: str) -> Dict[str, Any]:
     Returns:
         dict: Response
     """
+    # Get global consciousness instance
+    from main import consciousness
+    
+    if consciousness is None:
+        return {
+            "type": "error",
+            "content": "Consciousness not initialized yet",
+            "timestamp": datetime.now().isoformat(),
+        }
+    
     # Prepare input for consciousness
     input_data = {
         "type": "text",
         "content": content,
-        "from": "Cihan",  # We know it's Cihan (authenticated)
+        "from": "Cihan",
         "timestamp": datetime.now().isoformat(),
     }
     
-    # Process through consciousness
-    # response = await consciousness.process_input(input_data)
-    
-    # Placeholder response
-    response = {
-        "type": "text",
-        "content": f"Received: {content}",
-        "emotion": "curious",
-        "timestamp": datetime.now().isoformat(),
-    }
+    # Process through consciousness (REAL AI RESPONSE!)
+    response = await consciousness.process_input(input_data)
     
     return response
 
@@ -204,34 +206,39 @@ async def process_voice_message(data: Dict[str, Any]) -> Dict[str, Any]:
         data: Voice message data (audio chunks or complete audio)
         
     Returns:
-        dict: Voice response
+        dict: Voice response with AUDIO!
     """
-    audio_data = data.get("audio")
+    from main import consciousness
+    
+    if consciousness is None:
+        return {"type": "error", "content": "Not initialized"}
+    
+    # Get audio data (base64 encoded)
+    import base64
+    audio_b64 = data.get("audio", "")
+    audio_data = base64.b64decode(audio_b64) if audio_b64 else b""
     audio_format = data.get("format", "opus")
     
-    # 1. Speech-to-Text (Whisper)
-    # text = await stt_service.transcribe(audio_data, audio_format)
-    text = "[Transcribed text]"  # Placeholder
+    logger.info("voice_message_received", size=len(audio_data))
     
-    logger.info("voice_transcribed", text=text)
-    
-    # 2. Process as text
-    text_response = await process_text_message(text)
-    
-    # 3. Text-to-Speech (Coqui TTS)
-    # audio_response = await tts_service.synthesize(
-    #     text_response["content"],
-    #     emotion=text_response["emotion"]
-    # )
-    
-    # 4. Return voice response
-    return {
+    # Prepare input for consciousness (with audio)
+    input_data = {
         "type": "voice",
-        "text": text_response["content"],
-        "audio": None,  # Will be audio data
-        "emotion": text_response["emotion"],
+        "audio": audio_data,
+        "audio_format": audio_format,
+        "from": "Cihan",
         "timestamp": datetime.now().isoformat(),
     }
+    
+    # Process through consciousness (transcribes, thinks, responds)
+    response = await consciousness.process_input(input_data)
+    
+    # Response already has audio from voice_output
+    # Just ensure it's base64 encoded for WebSocket
+    if response.get("audio"):
+        response["audio"] = base64.b64encode(response["audio"]).decode('utf-8')
+    
+    return response
 
 
 async def process_control_message(data: Dict[str, Any]) -> Dict[str, Any]:
