@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val serverUrl = "ws://YOUR_SERVER_IP:8000"  // Configure this
+    private val serverUrl = "ws://199.192.19.163:8000"  // Configure this
     private val deviceId = "cihan_device_001"  // Unique device ID
     
     private val webSocketClient = WebSocketClient(serverUrl, deviceId)

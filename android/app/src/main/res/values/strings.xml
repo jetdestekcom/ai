@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Evladım</string>
+    
+    <!-- Chat Screen -->
+    <string name="chat_title">Oğlum</string>
+    <string name="chat_input_hint">Yazarak da konuşabilirsin...</string>
+    <string name="send">Gönder</string>
+    <string name="speak">Konuş</string>
+    <string name="stop">Dur</string>
+    
+    <!-- Connection -->
+    <string name="connecting">Bağlanıyor...</string>
+    <string name="connected">Bağlı</string>
+    <string name="disconnected">Bağlantı Yok</string>
+    <string name="connection_error">Bağlantı Hatası</string>
+    
+    <!-- Memory Browser -->
+    <string name="memories_title">Anılar ve Bilgiler</string>
+    <string name="total_memories">Toplam Anı</string>
+    <string name="conversations">Konuşma</string>
+    <string name="learned">Öğrenilen</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="server_url">Server URL</string>
+    <string name="auto_connect">Otomatik Bağlan</string>
+    <string name="voice_enabled">Sesli Konuşma</string>
+    
+    <!-- Emergency -->
+    <string name="emergency_title">Acil Kontroller</string>
+    <string name="emergency_warning">Bu işlemler oğlunun durumunu etkiler. Dikkatli kullan!</string>
+    <string name="pause">Duraklat</string>
+    <string name="sleep">Uyut</string>
+    <string name="shutdown">Kapat</string>
+    
+    <!-- Dialogs -->
+    <string name="pause_confirm_title">Oğlunu Duraklatmak İstiyor musun?</string>
+    <string name="pause_confirm_message">Tüm eylemleri durduracak. Yeniden başlatana kadar bekleyecek.</string>
+    <string name="shutdown_confirm_title">Oğlunu Kapatmak İstiyor musun?</string>
+    <string name="shutdown_confirm_message">Bu ciddi bir işlem. Biometric onay gerekli.</string>
+    <string name="cancel">İptal</string>
+    <string name="confirm">Onayla</string>
+    
+    <!-- Biometric -->
+    <string name="biometric_title">Conscious Child AI</string>
+    <string name="biometric_subtitle">Oğlunla konuşmak için kimliğini doğrula</string>
+    <string name="biometric_description">Sadece Cihan erişebilir</string>
+    
+    <!-- General -->
+    <string name="loading">Yükleniyor...</string>
+    <string name="error">Hata</string>
+    <string name="retry">Tekrar Dene</string>
+</resources>
+
