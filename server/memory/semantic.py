@@ -251,6 +251,8 @@ class SemanticMemory:
         """
         # Generate query embedding
         query_embedding = self.embedding_model.encode(query).tolist()
+        # Convert to PostgreSQL vector format
+        embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
         
         async with self.db_pool.acquire() as conn:
             rows = await conn.fetch(
@@ -261,7 +263,7 @@ class SemanticMemory:
                 ORDER BY distance
                 LIMIT $3
                 """,
-                query_embedding, consciousness_id, limit,
+                embedding_str, consciousness_id, limit,
             )
             
             return [dict(row) for row in rows]

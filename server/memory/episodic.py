@@ -322,6 +322,8 @@ class EpisodicMemory:
         """
         # Generate query embedding
         query_embedding = self.embedding_model.encode(query).tolist()
+        # Convert to PostgreSQL vector format
+        embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
         
         async with self.db_pool.acquire() as conn:
             rows = await conn.fetch(
@@ -332,7 +334,7 @@ class EpisodicMemory:
                 ORDER BY distance
                 LIMIT $4
                 """,
-                query_embedding, consciousness_id, min_importance, limit,
+                embedding_str, consciousness_id, min_importance, limit,
             )
             
             return [dict(row) for row in rows]
