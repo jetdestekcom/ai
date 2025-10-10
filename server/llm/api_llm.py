@@ -220,7 +220,12 @@ class HybridLLM(BaseLLM):
         use_api = force_api or self._should_use_api(messages)
         
         # Try with timeout
-        timeout = 10  # 10 seconds max for local LLM
+        timeout = 5  # 5 seconds max for local LLM (CPU too slow, prefer API)
+        
+        # PREFER API FOR FIRST MESSAGES (baby learning father)
+        if len(messages) <= 3 and self.api_llm:
+            use_api = True
+            logger.info("first_messages_using_api_for_quality")
         
         if use_api and self.api_llm:
             logger.info("routing_to_api_llm")
