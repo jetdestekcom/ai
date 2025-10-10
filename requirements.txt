@@ -57,7 +57,7 @@ httpx==0.25.2
 requests==2.31.0
 
 # AI API Clients
-anthropic==0.8.1
+anthropic==0.39.0
 openai==1.6.1
 # playwright==1.40.0  # REMOVED - causes install issues, httpx is sufficient
 beautifulsoup4==4.12.2
