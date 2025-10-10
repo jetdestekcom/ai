@@ -123,6 +123,7 @@ class EpisodicMemory:
         
         # Convert to JSON strings for PostgreSQL
         import json
+        participants_json = json.dumps(participants) if isinstance(participants, list) else participants
         emotions_json = json.dumps(emotions)
         learned_concepts_json = json.dumps(learned_concepts)
         learned_values_json = json.dumps(learned_values)
@@ -141,7 +142,7 @@ class EpisodicMemory:
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 """,
                 memory_id, consciousness_id, content, summary,
-                participants, context_type, emotions_json, emotional_intensity,
+                participants_json, context_type, emotions_json, emotional_intensity,
                 importance, significance_tags_json, learned_concepts_json, learned_values_json,
                 embedding, datetime.now(),
             )
