@@ -120,4 +120,8 @@ class SimpleLLM(BaseLLM):
         """Not implemented for simple LLM."""
         response = await self.generate(messages, config)
         yield response
+    
+    async def close(self):
+        """Close Simple LLM (no resources to release)."""
+        logger.info("simple_llm_closed")
 
