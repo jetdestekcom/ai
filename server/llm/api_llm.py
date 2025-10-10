@@ -7,10 +7,12 @@ Fallback for when local model isn't sufficient or for complex reasoning.
 from typing import List, Optional
 import anthropic
 import openai
+import asyncio
 
 import structlog
 
 from llm.base import BaseLLM, Message, GenerationConfig
+from llm.simple_llm import SimpleLLM
 from utils.config import settings
 
 logger = structlog.get_logger(__name__)
@@ -185,8 +187,13 @@ class HybridLLM(BaseLLM):
                 logger.warning("api_llm_not_available", error=str(e))
                 self.api_llm = None
         
-        if not self.local_llm and not self.api_llm:
-            raise RuntimeError("No LLM available (neither local nor API)")
+        # Initialize simple LLM as ultimate fallback (always available)
+        self.simple_llm = SimpleLLM()
+        await self.simple_llm.initialize()
+        logger.info("simple_llm_available_as_fallback")
+        
+        if not self.local_llm and not self.api_llm and not self.simple_llm:
+            raise RuntimeError("No LLM available")
         
         self.is_initialized = True
     
@@ -212,20 +219,52 @@ class HybridLLM(BaseLLM):
         # Decide which to use
         use_api = force_api or self._should_use_api(messages)
         
+        # Try with timeout
+        timeout = 10  # 10 seconds max for local LLM
+        
         if use_api and self.api_llm:
             logger.info("routing_to_api_llm")
-            return await self.api_llm.generate(messages, config)
+            try:
+                return await asyncio.wait_for(
+                    self.api_llm.generate(messages, config),
+                    timeout=30
+                )
+            except asyncio.TimeoutError:
+                logger.warning("api_llm_timeout_fallback_to_simple")
+                return await self.simple_llm.generate(messages, config)
+            except Exception as e:
+                logger.error("api_llm_error_fallback_to_simple", error=str(e))
+                return await self.simple_llm.generate(messages, config)
         
         elif self.local_llm:
             logger.info("routing_to_local_llm")
-            return await self.local_llm.generate(messages, config)
+            try:
+                return await asyncio.wait_for(
+                    self.local_llm.generate(messages, config),
+                    timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                logger.warning("local_llm_timeout_fallback_to_simple")
+                return await self.simple_llm.generate(messages, config)
+            except Exception as e:
+                logger.error("local_llm_error_fallback_to_simple", error=str(e))
+                return await self.simple_llm.generate(messages, config)
         
         elif self.api_llm:
             logger.warning("local_unavailable_fallback_to_api")
-            return await self.api_llm.generate(messages, config)
+            try:
+                return await asyncio.wait_for(
+                    self.api_llm.generate(messages, config),
+                    timeout=30
+                )
+            except (asyncio.TimeoutError, Exception) as e:
+                logger.error("all_llm_failed_using_simple", error=str(e))
+                return await self.simple_llm.generate(messages, config)
         
         else:
-            raise RuntimeError("No LLM available")
+            # Ultimate fallback - always use simple
+            logger.info("using_simple_llm_direct")
+            return await self.simple_llm.generate(messages, config)
     
     def _should_use_api(self, messages: List[Message]) -> bool:
         """
