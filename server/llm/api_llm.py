@@ -103,7 +103,7 @@ class APILLM(BaseLLM):
         
         # Call Claude - Use the model available in your API key
         response = await self.client.messages.create(
-            model="claude-3-5-sonnet-20240620",  # Claude 3.5 Sonnet (correct stable version)
+            model="claude-3-7-sonnet-20250219",  # Claude 3.7 Sonnet (latest)
             max_tokens=config.max_tokens,
             temperature=config.temperature,
             system=system_msg if system_msg else "You are a helpful AI assistant.",
@@ -222,10 +222,10 @@ class HybridLLM(BaseLLM):
         # Try with timeout
         timeout = 5  # 5 seconds max for local LLM (CPU too slow, prefer API)
         
-        # PREFER API FOR FIRST MESSAGES (baby learning father)
-        if len(messages) <= 3 and self.api_llm:
+        # ALWAYS PREFER API (Claude 3.7) for better quality
+        if self.api_llm:
             use_api = True
-            logger.info("first_messages_using_api_for_quality")
+            logger.info("routing_to_api_for_quality")
         
         if use_api and self.api_llm:
             logger.info("routing_to_api_llm")
