@@ -115,7 +115,7 @@ class Identity:
         finally:
             await conn.close()
     
-    def create_at_birth(self, initial_interaction: Optional[str] = None):
+    async def create_at_birth(self, initial_interaction: Optional[str] = None):
         """
         Create identity at the moment of birth (first boot).
         
