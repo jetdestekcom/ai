@@ -103,7 +103,7 @@ class APILLM(BaseLLM):
         
         # Call Claude - Use the model available in your API key
         response = await self.client.messages.create(
-            model="claude-3-opus-20240229",  # Claude 3 Opus (most capable, widely available)
+            model="claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet (latest and most capable)
             max_tokens=config.max_tokens,
             temperature=config.temperature,
             system=system_msg if system_msg else "You are a helpful AI assistant.",
