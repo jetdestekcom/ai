@@ -103,7 +103,7 @@ class APILLM(BaseLLM):
         
         # Call Claude
         response = await self.client.messages.create(
-            model="claude-3-5-sonnet-latest",  # Use latest available model
+            model="claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet
             max_tokens=config.max_tokens,
             temperature=config.temperature,
             system=system_msg if system_msg else "You are a helpful AI assistant.",

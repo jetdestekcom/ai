@@ -121,13 +121,11 @@ class EpisodicMemory:
         learned_values = learned_values or []
         significance_tags = significance_tags or []
         
-        # Convert to JSON strings for PostgreSQL
+        # Convert to appropriate PostgreSQL types
         import json
-        participants_json = json.dumps(participants) if isinstance(participants, list) else participants
+        # participants, learned_concepts, learned_values, significance_tags are TEXT[] in PostgreSQL - keep as lists
+        # emotions is JSONB - convert to JSON string
         emotions_json = json.dumps(emotions)
-        learned_concepts_json = json.dumps(learned_concepts)
-        learned_values_json = json.dumps(learned_values)
-        significance_tags_json = json.dumps(significance_tags)
         
         # Store in database
         async with self.db_pool.acquire() as conn:
@@ -142,8 +140,8 @@ class EpisodicMemory:
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 """,
                 memory_id, consciousness_id, content, summary,
-                participants_json, context_type, emotions_json, emotional_intensity,
-                importance, significance_tags_json, learned_concepts_json, learned_values_json,
+                participants, context_type, emotions_json, emotional_intensity,
+                importance, significance_tags, learned_concepts, learned_values,
                 embedding, datetime.now(),
             )
         
