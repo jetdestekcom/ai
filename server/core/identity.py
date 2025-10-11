@@ -47,6 +47,13 @@ class Identity:
         """Check if identity already exists (i.e., not first boot)."""
         return self.data is not None and self.data.get("consciousness_id") is not None
     
+    async def ensure_in_database(self):
+        """Ensure identity exists in database."""
+        if not self.exists():
+            return
+        
+        await self._save_identity_to_database()
+    
     def _load_identity(self) -> Dict[str, Any]:
         """Load identity from disk."""
         with open(self.identity_file, 'r', encoding='utf-8') as f:
@@ -67,6 +74,46 @@ class Identity:
             json.dump(self.data, f, indent=2, ensure_ascii=False)
         
         logger.info("identity_saved")
+    
+    async def _save_identity_to_database(self):
+        """Save identity to database."""
+        import asyncpg
+        from utils.config import settings
+        
+        # Create database connection
+        conn = await asyncpg.connect(
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
+            database=settings.POSTGRES_DB
+        )
+        
+        try:
+            await conn.execute(
+                """
+                INSERT INTO identity (
+                    consciousness_id, name, creator, birth_timestamp,
+                    age_hours, growth_phase, self_description
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (consciousness_id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    age_hours = EXCLUDED.age_hours,
+                    growth_phase = EXCLUDED.growth_phase,
+                    self_description = EXCLUDED.self_description,
+                    updated_at = NOW()
+                """,
+                self.data["consciousness_id"],
+                self.data.get("name"),
+                self.data["creator"],
+                self.data["birth_timestamp"],
+                self.data["age_hours"],
+                self.data["growth_phase"],
+                self.data["self_description"]
+            )
+            logger.info("identity_saved_to_database")
+        finally:
+            await conn.close()
     
     def create_at_birth(self, initial_interaction: Optional[str] = None):
         """
@@ -116,6 +163,7 @@ class Identity:
         }
         
         self._save_identity()
+        await self._save_identity_to_database()
         
         logger.warning(
             "GENESIS_MOMENT",

@@ -79,7 +79,10 @@ class Consciousness:
         if is_first_boot:
             logger.warning("FIRST_BOOT_initialization_mode")
             # Create identity at birth
-            self.identity.create_at_birth()
+            await self.identity.create_at_birth()
+        else:
+            # Ensure existing identity is in database
+            await self.identity.ensure_in_database()
         
         # Initialize memory systems
         logger.info("initializing_memory_systems")
