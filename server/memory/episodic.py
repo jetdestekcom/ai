@@ -126,6 +126,8 @@ class EpisodicMemory:
         # participants, learned_concepts, learned_values, significance_tags are TEXT[] in PostgreSQL - keep as lists
         # emotions is JSONB - convert to JSON string
         emotions_json = json.dumps(emotions)
+        # embedding is vector(384) - convert list to PostgreSQL vector string format
+        embedding_str = '[' + ','.join(map(str, embedding)) + ']'
         
         # Store in database
         async with self.db_pool.acquire() as conn:
@@ -142,7 +144,7 @@ class EpisodicMemory:
                 memory_id, consciousness_id, content, summary,
                 participants, context_type, emotions_json, emotional_intensity,
                 importance, significance_tags, learned_concepts, learned_values,
-                embedding, datetime.now(),
+                embedding_str, datetime.now(),
             )
         
         # Log special memories
