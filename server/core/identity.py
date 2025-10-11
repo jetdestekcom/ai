@@ -90,6 +90,12 @@ class Identity:
         )
         
         try:
+            # Convert string timestamp to datetime object
+            from datetime import datetime
+            birth_timestamp = self.data["birth_timestamp"]
+            if isinstance(birth_timestamp, str):
+                birth_timestamp = datetime.fromisoformat(birth_timestamp.replace('Z', '+00:00'))
+            
             await conn.execute(
                 """
                 INSERT INTO identity (
@@ -106,7 +112,7 @@ class Identity:
                 self.data["consciousness_id"],
                 self.data.get("name"),
                 self.data["creator"],
-                self.data["birth_timestamp"],
+                birth_timestamp,
                 self.data["age_hours"],
                 self.data["growth_phase"],
                 self.data["self_description"]
