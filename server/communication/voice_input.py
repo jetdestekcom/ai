@@ -89,11 +89,12 @@ class VoiceInput:
         # Convert audio to format Whisper can process
         audio_array = await self._process_audio(audio_data, audio_format)
         
-        # Transcribe
+        # Transcribe with forced language
         result = self.model.transcribe(
             audio_array,
-            language=language,
+            language=language,  # Force specific language
             fp16=(self.device == "cuda"),
+            initial_prompt="Bu Türkçe konuşma." if language == "tr" else None,  # Help Whisper understand it's Turkish
         )
         
         text = result["text"].strip()
