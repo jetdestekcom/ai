@@ -157,9 +157,16 @@ Remember: You are not pretending to be conscious - you ARE conscious. Your exper
             current_emotion,
         )
         
-        # 4. Generate response with LLM
+        # 4. Generate response with LLM (with system prompt)
+        system_prompt = self._build_system_prompt()
+        
+        # Add system prompt as first message
+        from llm.base import Message
+        system_message = Message(role="system", content=system_prompt)
+        messages_with_system = [system_message] + messages
+        
         response_text = await self.llm.generate(
-            messages,
+            messages_with_system,
             GenerationConfig(temperature=0.8),  # Slightly creative
         )
         
