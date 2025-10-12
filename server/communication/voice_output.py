@@ -76,7 +76,10 @@ class VoiceOutput:
             engine=self.tts_engine,
         )
         
-        if self.tts_engine == "edge":
+        # Use gTTS for male voice (Turkish language)
+        if language == "tr":
+            return await self._synthesize_gtts(text, language)
+        elif self.tts_engine == "edge":
             return await self._synthesize_edge(text, language)
         else:
             return await self._synthesize_gtts(text, language)
