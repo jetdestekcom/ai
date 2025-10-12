@@ -240,7 +240,8 @@ class Consciousness:
             logger.info("transcribing_voice_input")
             content = await self.voice_input.transcribe(
                 input_data.get("audio"),
-                input_data.get("audio_format", "opus")
+                input_data.get("audio_format", "opus"),
+                language="tr"  # Force Turkish language
             )
             logger.info("voice_transcribed", text=content[:100])
         
