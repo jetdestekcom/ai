@@ -83,6 +83,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _memoryUsage = MutableStateFlow(0)
     val memoryUsage: StateFlow<Int> = _memoryUsage.asStateFlow()
     
+    private var isConnecting = false
+    
     init {
         // Collect incoming messages
         viewModelScope.launch {
@@ -98,8 +100,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun connect() {
+        if (isConnecting) {
+            Log.d("MainViewModel", "Already connecting, skipping duplicate connect()")
+            return
+        }
+        
+        isConnecting = true
         viewModelScope.launch {
-            webSocketClient.connect()
+            try {
+                webSocketClient.connect()
+            } finally {
+                isConnecting = false
+            }
         }
     }
     
@@ -208,8 +220,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     private fun handleIncomingMessage(aiMessage: AIMessage) {
+        Log.d("MainViewModel", "handleIncomingMessage called: ${aiMessage::class.simpleName}")
+        
         when (aiMessage) {
             is AIMessage.Text -> {
+                Log.d("MainViewModel", "Text message received: ${aiMessage.content.take(50)}")
                 addMessage(ChatMessage(
                     sender = "AI",
                     content = aiMessage.content,
@@ -220,6 +235,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             is AIMessage.Voice -> {
+                Log.d("MainViewModel", "Voice message received: ${aiMessage.content.take(50)}, hasAudio=${aiMessage.audioData != null}")
                 addMessage(ChatMessage(
                     sender = "AI",
                     content = aiMessage.content,
@@ -229,12 +245,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _currentEmotion.value = aiMessage.emotion
                 
                 // Play audio
-                aiMessage.audioData?.let { 
+                aiMessage.audioData?.let {
+                    Log.d("MainViewModel", "Playing audio: ${it.size} bytes")
                     audioPlayer.play(it)
-                }
+                } ?: Log.w("MainViewModel", "No audio data in voice message!")
             }
             
             is AIMessage.Proactive -> {
+                Log.d("MainViewModel", "Proactive message: ${aiMessage.content}")
                 // AI initiated conversation
                 addMessage(ChatMessage(
                     sender = "AI",
@@ -245,10 +263,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             is AIMessage.UpdateProposal -> {
+                Log.d("MainViewModel", "Update proposal received")
                 // TODO: Show update approval dialog
             }
             
             is AIMessage.System -> {
+                Log.d("MainViewModel", "System message: ${aiMessage.message}")
                 // System message - update status
                 _systemStatus.value = "Connected"
             }
@@ -256,6 +276,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     private fun addMessage(message: ChatMessage) {
+        Log.d("MainViewModel", "Adding message to UI: ${message.content.take(50)}")
         _messages.value = _messages.value + message
     }
     

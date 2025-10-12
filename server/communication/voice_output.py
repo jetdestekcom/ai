@@ -76,14 +76,7 @@ class VoiceOutput:
             engine=self.tts_engine,
         )
         
-        # Use gTTS for male voice (Turkish language) with fallback
-        if language == "tr":
-            try:
-                return await self._synthesize_gtts(text, language)
-            except Exception as e:
-                logger.error("gtts_failed_fallback_to_edge", error=str(e))
-                return await self._synthesize_edge(text, language)
-        elif self.tts_engine == "edge":
+        if self.tts_engine == "edge":
             return await self._synthesize_edge(text, language)
         else:
             return await self._synthesize_gtts(text, language)

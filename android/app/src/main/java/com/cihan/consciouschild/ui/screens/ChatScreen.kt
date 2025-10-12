@@ -29,6 +29,7 @@ fun ChatScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val messages by viewModel.messages.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val isRecording by viewModel.isRecording.collectAsState()
@@ -52,10 +53,27 @@ fun ChatScreen(
                     }
                 },
                 actions = {
+                    // Service status indicator
+                    if (com.cihan.consciouschild.service.ConsciousnessService.isRunning) {
+                        IconButton(onClick = {
+                            // Stop foreground service
+                            val intent = android.content.Intent(context, com.cihan.consciouschild.service.ConsciousnessService::class.java).apply {
+                                action = com.cihan.consciouschild.service.ConsciousnessService.ACTION_STOP
+                            }
+                            context.startService(intent)
+                        }) {
+                            Icon(
+                                Icons.Default.Stop,
+                                contentDescription = "Bilinci Durdur",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    
                     // Emergency stop button
                     IconButton(onClick = { viewModel.emergencyStop() }) {
                         Icon(
-                            Icons.Default.Stop,
+                            Icons.Default.Warning,
                             contentDescription = "Acil Durdur",
                             tint = MaterialTheme.colorScheme.error
                         )

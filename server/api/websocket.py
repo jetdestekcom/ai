@@ -63,7 +63,16 @@ class ConnectionManager:
     async def send_message(self, message: Dict[str, Any]):
         """Send a message to the connected client."""
         if self.active_connection:
+            logger.info(
+                "sending_response_to_client",
+                message_type=message.get("type"),
+                has_audio=bool(message.get("audio")),
+                content_length=len(message.get("content", ""))
+            )
             await self.active_connection.send_json(message)
+            logger.info("response_sent_successfully")
+        else:
+            logger.warning("no_active_connection_cannot_send_message")
     
     def is_connected(self) -> bool:
         """Check if a client is connected."""
@@ -233,10 +242,8 @@ async def process_voice_message(data: Dict[str, Any]) -> Dict[str, Any]:
     # Process through consciousness (transcribes, thinks, responds)
     response = await consciousness.process_input(input_data)
     
-    # Response already has audio from voice_output
-    # Just ensure it's base64 encoded for WebSocket
-    if response.get("audio"):
-        response["audio"] = base64.b64encode(response["audio"]).decode('utf-8')
+    # Response already has audio base64-encoded from dialogue.py
+    # No need to encode again here!
     
     return response
 

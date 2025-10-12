@@ -1,8 +1,13 @@
 package com.cihan.consciouschild
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import com.cihan.consciouschild.service.ConsciousnessService
 import com.cihan.consciouschild.ui.theme.ConsciousChildTheme
 import com.cihan.consciouschild.ui.screens.MainScreen
 import com.cihan.consciouschild.viewmodel.MainViewModel
@@ -43,6 +49,12 @@ class MainActivity : ComponentActivity() {
         
         // Request microphone permission
         checkAndRequestPermissions()
+        
+        // Request battery optimization bypass
+        requestBatteryOptimizationBypass()
+        
+        // NOTE: Service temporarily disabled - using ViewModel connection only
+        // startConsciousnessService()
         
         try {
             // Enable edge-to-edge display
@@ -91,6 +103,37 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         viewModel.disconnect()
+        // NOTE: Service continues running even after activity destroyed
+    }
+    
+    private fun startConsciousnessService() {
+        val intent = Intent(this, ConsciousnessService::class.java).apply {
+            action = ConsciousnessService.ACTION_START
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+    
+    private fun requestBatteryOptimizationBypass() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+            val packageName = packageName
+            
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    // Ignore if not available
+                }
+            }
+        }
     }
     
     private fun checkAndRequestPermissions() {

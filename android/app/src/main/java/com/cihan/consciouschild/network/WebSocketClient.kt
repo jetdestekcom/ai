@@ -21,7 +21,14 @@ class WebSocketClient(
     private val tag = "WebSocketClient"
     
     private val client = HttpClient(CIO) {
-        install(WebSockets)
+        install(WebSockets) {
+            pingInterval = 20_000  // 20 seconds
+            maxFrameSize = Long.MAX_VALUE
+        }
+        
+        engine {
+            requestTimeout = 120_000  // 2 minutes timeout for slow responses
+        }
     }
     
     private var session: DefaultClientWebSocketSession? = null
@@ -118,14 +125,17 @@ class WebSocketClient(
             session?.incoming?.consumeAsFlow()?.collect { frame ->
                 if (frame is Frame.Text) {
                     val text = frame.readText()
-                    Log.d(tag, "Message received: ${text.take(100)}")
+                    Log.d(tag, "RAW Message received: ${text.take(200)}")
                     
                     try {
                         val json = JSONObject(text)
+                        Log.d(tag, "JSON parsed - type: ${json.optString("type")}")
                         val aiMessage = parseMessage(json)
+                        Log.d(tag, "AIMessage created: ${aiMessage::class.simpleName}")
                         _messages.emit(aiMessage)
+                        Log.d(tag, "AIMessage emitted to flow")
                     } catch (e: Exception) {
-                        Log.e(tag, "Failed to parse message", e)
+                        Log.e(tag, "Failed to parse message: $text", e)
                     }
                 }
             }
@@ -144,9 +154,9 @@ class WebSocketClient(
             )
             
             "voice" -> AIMessage.Voice(
-                content = json.getString("text"),
+                content = json.optString("content", json.optString("text", "")),
                 audioData = json.optString("audio")?.let { 
-                    android.util.Base64.decode(it, android.util.Base64.DEFAULT)
+                    if (it.isNotBlank()) android.util.Base64.decode(it, android.util.Base64.DEFAULT) else null
                 },
                 emotion = json.optString("emotion", "neutral"),
                 timestamp = json.optLong("timestamp", System.currentTimeMillis())

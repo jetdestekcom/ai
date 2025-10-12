@@ -171,6 +171,8 @@ def main():
         port=settings.SERVER_PORT,
         reload=settings.RELOAD,
         log_level=settings.LOG_LEVEL.lower(),
+        ws_ping_interval=30.0,  # Send ping every 30 seconds
+        ws_ping_timeout=120.0,  # Wait 2 minutes for pong
     )
 
 
