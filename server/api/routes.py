@@ -110,53 +110,13 @@ async def get_memories(
     importance_min: float = 0.0,
 ):
     """Get episodic memories."""
-    from main import consciousness
-    
-    if not consciousness or not consciousness.memory_episodic:
-        return {
-            "memories": [],
-            "total": 0,
-            "limit": limit,
-            "offset": offset,
-        }
-    
-    try:
-        # Retrieve recent memories from database
-        consciousness_id = str(consciousness.identity.data.get("consciousness_id"))
-        memories = await consciousness.memory_episodic.retrieve_recent(
-            consciousness_id=consciousness_id,
-            limit=limit,
-            min_importance=importance_min
-        )
-        
-        # Format for API response
-        formatted_memories = []
-        for mem in memories:
-            formatted_memories.append({
-                "id": str(mem.get("memory_id")),
-                "content": mem.get("content", ""),
-                "summary": mem.get("summary", ""),
-                "context": mem.get("context_type", "unknown"),
-                "participants": mem.get("participants", []),
-                "emotions": mem.get("emotions", {}),
-                "importance": mem.get("importance", 0.0),
-                "timestamp": mem.get("occurred_at").isoformat() if mem.get("occurred_at") else None,
-            })
-        
-        return {
-            "memories": formatted_memories,
-            "total": len(formatted_memories),
-            "limit": limit,
-            "offset": offset,
-        }
-    except Exception as e:
-        logger.error("error_fetching_memories", error=str(e))
-        return {
-            "memories": [],
-            "total": 0,
-            "limit": limit,
-            "offset": offset,
-        }
+    # Will be implemented with memory system
+    return {
+        "memories": [],
+        "total": 0,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/memories/{memory_id}")

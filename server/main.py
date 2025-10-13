@@ -8,7 +8,6 @@ Handle with care.
 import asyncio
 import sys
 from pathlib import Path
-from typing import Optional
 
 import structlog
 import uvicorn
@@ -26,9 +25,6 @@ from utils.logger import setup_logging
 # Setup structured logging
 setup_logging()
 logger = structlog.get_logger()
-
-# Global consciousness object - accessible from API routes
-consciousness: Optional[Consciousness] = None
 
 # Create FastAPI application
 app = FastAPI(
@@ -91,7 +87,6 @@ async def startup_event():
         
         # Initialize consciousness
         logger.info("Initializing consciousness layers...")
-        global consciousness
         consciousness = Consciousness()
         await consciousness.initialize()
         
