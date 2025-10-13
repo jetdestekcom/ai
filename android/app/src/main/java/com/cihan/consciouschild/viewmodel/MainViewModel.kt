@@ -12,6 +12,11 @@ import com.cihan.consciouschild.audio.VoiceRecorder
 import com.cihan.consciouschild.audio.AudioPlayer
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.*
 
 /**
  * Main ViewModel - Complete application state and business logic.
@@ -194,7 +199,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun refreshMemories() {
-        // TODO: Fetch memories from server via REST API
+        loadMemories()
+    }
+    
+    fun loadMemories() {
+        viewModelScope.launch {
+            try {
+                val httpUrl = serverUrl.value.replace("ws://", "http://").replace("wss://", "https://")
+                val url = "$httpUrl/memories?limit=50&importance_min=0.5"
+                
+                val client = io.ktor.client.HttpClient(io.ktor.client.engine.cio.CIO) {
+                    install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
+                        json()
+                    }
+                }
+                
+                val response: kotlinx.serialization.json.JsonObject = client.get(url).body()
+                client.close()
+                
+                val memoriesArray = response["memories"]?.jsonArray ?: return@launch
+                
+                val loadedMemories = memoriesArray.mapNotNull { element ->
+                    try {
+                        val memObj = element.jsonObject
+                        Memory(
+                            id = memObj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                            content = memObj["content"]?.jsonPrimitive?.content ?: "",
+                            summary = memObj["summary"]?.jsonPrimitive?.content ?: "",
+                            context = memObj["context"]?.jsonPrimitive?.content ?: "unknown",
+                            importance = memObj["importance"]?.jsonPrimitive?.double?.toFloat() ?: 0.5f,
+                            timestamp = memObj["timestamp"]?.jsonPrimitive?.content ?: ""
+                        )
+                    } catch (e: Exception) {
+                        Log.e("MainViewModel", "Failed to parse memory", e)
+                        null
+                    }
+                }
+                
+                _memories.value = loadedMemories
+                Log.d("MainViewModel", "Loaded ${loadedMemories.size} memories")
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Failed to load memories", e)
+            }
+        }
     }
     
     fun exportMemories() {
@@ -271,6 +318,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d("MainViewModel", "System message: ${aiMessage.message}")
                 // System message - update status
                 _systemStatus.value = "Connected"
+                
+                // Load memories when connected
+                if (aiMessage.message.contains("Connected", ignoreCase = true)) {
+                    loadMemories()
+                }
             }
         }
     }
