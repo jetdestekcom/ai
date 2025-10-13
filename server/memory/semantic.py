@@ -111,6 +111,9 @@ class SemanticMemory:
         if is_cihan_teaching:
             importance = max(importance, 0.9)
         
+        # Convert embedding list to PostgreSQL vector string format
+        embedding_str = '[' + ','.join(map(str, embedding)) + ']'
+        
         async with self.db_pool.acquire() as conn:
             await conn.execute(
                 """
@@ -123,7 +126,7 @@ class SemanticMemory:
                 """,
                 concept_id, consciousness_id, concept_name, concept_type,
                 definition, learned_from, confidence, importance,
-                is_cihan_teaching, cihan_exact_words, embedding,
+                is_cihan_teaching, cihan_exact_words, embedding_str,
             )
         
         # Log learning
