@@ -110,7 +110,7 @@ async def get_memories(
     importance_min: float = 0.0,
 ):
     """Get episodic memories."""
-    from core.consciousness import consciousness
+    from main import consciousness
     
     if not consciousness or not consciousness.memory_episodic:
         return {
