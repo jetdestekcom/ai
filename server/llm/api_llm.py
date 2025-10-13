@@ -110,7 +110,7 @@ class APILLM(BaseLLM):
         logger.info("sending_system_prompt_to_claude", prompt_length=len(system_msg))
         
         response = await self.client.messages.create(
-            model="claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet (stable)
+            model="claude-3-7-sonnet-20250219",  # Claude 3.7 Sonnet (latest)
             max_tokens=config.max_tokens,
             temperature=config.temperature,
             system=system_msg,
