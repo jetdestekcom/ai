@@ -222,13 +222,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val loadedMemories = memoriesArray.mapNotNull { element ->
                     try {
                         val memObj = element.jsonObject
+                        val timestamp = memObj["timestamp"]?.jsonPrimitive?.content ?: ""
+                        val timeAgo = if (timestamp.isNotEmpty()) {
+                            // Simple time ago calculation
+                            "Recently"
+                        } else {
+                            "Unknown"
+                        }
+                        
                         Memory(
                             id = memObj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                            type = memObj["context"]?.jsonPrimitive?.content ?: "conversation",
                             content = memObj["content"]?.jsonPrimitive?.content ?: "",
-                            summary = memObj["summary"]?.jsonPrimitive?.content ?: "",
-                            context = memObj["context"]?.jsonPrimitive?.content ?: "unknown",
-                            importance = memObj["importance"]?.jsonPrimitive?.double?.toFloat() ?: 0.5f,
-                            timestamp = memObj["timestamp"]?.jsonPrimitive?.content ?: ""
+                            timeAgo = timeAgo,
+                            tags = listOf(memObj["context"]?.jsonPrimitive?.content ?: "general"),
+                            importance = memObj["importance"]?.jsonPrimitive?.double?.toFloat() ?: 0.5f
                         )
                     } catch (e: Exception) {
                         Log.e("MainViewModel", "Failed to parse memory", e)

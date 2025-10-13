@@ -82,10 +82,13 @@ dependencies {
     implementation 'io.ktor:ktor-client-cio:2.3.6'
     implementation 'io.ktor:ktor-client-websockets:2.3.6'
     implementation 'io.ktor:ktor-client-logging:2.3.6'
+    implementation 'io.ktor:ktor-client-content-negotiation:2.3.6'
+    implementation 'io.ktor:ktor-serialization-kotlinx-json:2.3.6'
     
     // JSON
     implementation 'com.squareup.moshi:moshi-kotlin:1.15.0'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0'
     
     // Biometric
     implementation 'androidx.biometric:biometric:1.1.0'
