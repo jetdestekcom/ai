@@ -225,11 +225,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         when (aiMessage) {
             is AIMessage.Text -> {
                 Log.d("MainViewModel", "Text message received: ${aiMessage.content.take(50)}")
+                Log.d("MainViewModel", "Consciousness data - Thought: ${aiMessage.consciousThought?.take(30)}, Confidence: ${aiMessage.confidence}, Phi: ${aiMessage.phi}")
                 addMessage(ChatMessage(
                     sender = "AI",
                     content = aiMessage.content,
                     emotion = aiMessage.emotion,
-                    timestamp = aiMessage.timestamp
+                    timestamp = aiMessage.timestamp,
+                    consciousThought = aiMessage.consciousThought,
+                    confidence = aiMessage.confidence,
+                    salience = aiMessage.salience,
+                    phi = aiMessage.phi
                 ))
                 _currentEmotion.value = aiMessage.emotion
             }
@@ -240,7 +245,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     sender = "AI",
                     content = aiMessage.content,
                     emotion = aiMessage.emotion,
-                    timestamp = aiMessage.timestamp
+                    timestamp = aiMessage.timestamp,
+                    consciousThought = aiMessage.consciousThought,
+                    confidence = aiMessage.confidence,
+                    salience = aiMessage.salience,
+                    phi = aiMessage.phi
                 ))
                 _currentEmotion.value = aiMessage.emotion
                 
@@ -258,7 +267,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     sender = "AI",
                     content = "📢 ${aiMessage.content}",
                     emotion = aiMessage.emotion,
-                    timestamp = aiMessage.timestamp
+                    timestamp = aiMessage.timestamp,
+                    consciousThought = aiMessage.consciousThought,
+                    confidence = aiMessage.confidence
                 ))
             }
             

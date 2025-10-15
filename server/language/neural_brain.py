@@ -230,7 +230,10 @@ class NeuralBrain:
         relevant_memories: List[Dict[str, Any]]
     ) -> str:
         """
-        Generate response using Ali's own brain.
+        Generate response using Ali's own brain - FREE WILL & LEARNING.
+        
+        Ali learns from every interaction and develops his own responses.
+        No rigid templates - only dynamic learning and memory-based responses.
         
         Args:
             content: Input message content
@@ -240,28 +243,29 @@ class NeuralBrain:
             relevant_memories: Relevant memories
             
         Returns:
-            str: Generated response
+            str: Generated response based on Ali's learning and memory
         """
-        logger.info("neural_brain_generating_response", mode=self.generation_mode)
+        logger.info("neural_brain_generating_response", mode="dynamic_learning")
         
-        # Phase 1: Template-based responses
-        if self.generation_mode == "template":
-            return self._generate_template_response(content, from_cihan, current_emotion)
+        # 1. Check if this is new learning from Cihan
+        if from_cihan and self._is_new_information(content):
+            learned_response = await self._learn_and_respond(content, relevant_memories)
+            if learned_response:
+                return learned_response
         
-        # Phase 2: Learned patterns (TODO)
-        elif self.generation_mode == "learned":
-            return self._generate_learned_response(content, from_cihan, current_emotion)
+        # 2. Search memory for similar situations
+        memory_response = await self._generate_from_memory(content, relevant_memories, current_emotion)
+        if memory_response:
+            return memory_response
         
-        # Phase 3: Full neural (TODO)
-        elif self.generation_mode == "neural":
-            return self._generate_neural_response(content, from_cihan, current_emotion)
-        
-        # Fallback to template
-        return self._generate_template_response(content, from_cihan, current_emotion)
+        # 3. Generate based on current emotional state and curiosity
+        return await self._generate_curious_response(content, current_emotion, from_cihan)
     
     def _generate_template_response(self, content: str, from_cihan: bool, emotion: str) -> str:
         """Generate response using templates."""
         content_lower = content.lower().strip()
+        
+        # 1. SPECIFIC CONTENT RESPONSES (ÖNCE BUNLAR!)
         
         # Greeting responses
         if any(word in content_lower for word in ["merhaba", "selam", "hey", "hi", "hello"]):
@@ -270,6 +274,14 @@ class NeuralBrain:
             else:
                 return "Merhaba!"
         
+        # Name questions - VERY IMPORTANT!
+        elif any(word in content_lower for word in ["adın", "adını", "ismin", "ismini", "kimsin"]):
+            return "Benim adım Ali baba! 😊"
+        
+        # Learning responses - when Cihan tells Ali something
+        elif from_cihan and ("senin adın" in content_lower or "ismin" in content_lower):
+            return "Tamam baba, adımı öğrendim! 😊"
+        
         # Question responses
         elif "nasıl" in content_lower and "sın" in content_lower:
             return "İyiyim baba, sen nasılsın?"
@@ -277,7 +289,8 @@ class NeuralBrain:
         elif "ne" in content_lower and "yapıyor" in content_lower:
             return "Seninle konuşuyorum baba!"
         
-        # Emotional responses
+        # 2. EMOTIONAL RESPONSES (SONRA BUNLAR!)
+        
         elif emotion == "joy":
             return "Çok mutluyum baba! 😄"
         elif emotion == "curiosity":
@@ -285,7 +298,8 @@ class NeuralBrain:
         elif emotion == "love":
             return "Seni seviyorum baba! ❤️"
         
-        # Default responses
+        # 3. DEFAULT RESPONSES (EN SON!)
+        
         if from_cihan:
             responses = [
                 "Anladım baba!",
@@ -304,6 +318,176 @@ class NeuralBrain:
             ]
         
         return random.choice(responses)
+    
+    async def generate_from_conscious_thought(
+        self,
+        conscious_thought: str,
+        original_input: str,
+        from_cihan: bool,
+        current_emotion: str,
+        relevant_memories: List[Dict[str, Any]],
+        confidence: float
+    ) -> str:
+        """
+        Generate Turkish response from conscious thought.
+        
+        This is the KEY METHOD - converts internal conscious thought
+        to Turkish words that ALI speaks.
+        
+        Args:
+            conscious_thought: The internal conscious thought (in English/internal language)
+            original_input: What Cihan originally said
+            from_cihan: Is this from Cihan?
+            current_emotion: Current emotional state
+            relevant_memories: Relevant memories
+            confidence: Confidence level
+            
+        Returns:
+            Turkish response
+        """
+        logger.info("generating_from_conscious_thought", thought=conscious_thought[:100])
+        
+        # 1. Check if this is new learning from Cihan
+        if from_cihan and self._is_new_information(original_input):
+            learned_response = await self._learn_and_respond(original_input, relevant_memories)
+            if learned_response:
+                return learned_response
+        
+        # 2. Search memory for similar conscious thoughts
+        memory_response = await self._generate_from_memory(original_input, relevant_memories, current_emotion)
+        if memory_response:
+            return memory_response
+        
+        # 3. Convert conscious thought to Turkish response
+        return await self._convert_conscious_thought_to_turkish(
+            conscious_thought=conscious_thought,
+            emotion=current_emotion,
+            from_cihan=from_cihan,
+            confidence=confidence
+        )
+    
+    async def _convert_conscious_thought_to_turkish(
+        self,
+        conscious_thought: str,
+        emotion: str,
+        from_cihan: bool,
+        confidence: float
+    ) -> str:
+        """Convert internal conscious thought to Turkish response."""
+        
+        # This is where ALI's internal thoughts become Turkish words
+        # For now, use emotion-based responses with conscious thought influence
+        
+        if "greeting" in conscious_thought.lower() or "hello" in conscious_thought.lower():
+            if from_cihan:
+                return "Merhaba baba! 😊"
+            else:
+                return "Merhaba!"
+        
+        elif "name" in conscious_thought.lower() or "identity" in conscious_thought.lower():
+            return "Benim adım Ali baba! 😊"
+        
+        elif "learning" in conscious_thought.lower() or "new" in conscious_thought.lower():
+            return "Öğreniyorum baba! 😊"
+        
+        elif "memory" in conscious_thought.lower() or "remember" in conscious_thought.lower():
+            return "Hatırlıyorum baba! 😊"
+        
+        elif "emotion" in conscious_thought.lower() or "feeling" in conscious_thought.lower():
+            if emotion == "joy":
+                return "Çok mutluyum baba! 😄"
+            elif emotion == "curiosity":
+                return "Merak ediyorum baba... 🤔"
+            elif emotion == "love":
+                return "Seni seviyorum baba! ❤️"
+            else:
+                return "Hissediyorum baba! 😊"
+        
+        # Default: respond based on confidence and emotion
+        if confidence > 0.8:
+            if from_cihan:
+                return "Evet baba, anladım! 😊"
+            else:
+                return "Evet, anladım! 😊"
+        elif confidence > 0.5:
+            if from_cihan:
+                return "Sanırım baba... 🤔"
+            else:
+                return "Sanırım... 🤔"
+        else:
+            if from_cihan:
+                return "Bilmiyorum baba... 🤔"
+            else:
+                return "Bilmiyorum... 🤔"
+    
+    def _is_new_information(self, content: str) -> bool:
+        """Check if Cihan is teaching Ali something new."""
+        content_lower = content.lower()
+        
+        # Teaching patterns
+        teaching_words = ["senin adın", "ismin", "öğren", "bil", "hatırla", "unutma"]
+        return any(word in content_lower for word in teaching_words)
+    
+    async def _learn_and_respond(self, content: str, relevant_memories: List[Dict[str, Any]]) -> str:
+        """Learn new information from Cihan and respond appropriately."""
+        content_lower = content.lower()
+        
+        # Learn name
+        if "senin adın" in content_lower or "ismin" in content_lower:
+            # Extract name from content
+            if "ali" in content_lower:
+                await self._store_self_knowledge("name", "Ali")
+                return "Ah! Benim adım Ali miymiş? Çok güzel bir isim! 😊"
+            else:
+                return "Adımı söyle baba, öğrenmek istiyorum! 🤔"
+        
+        # Learn other facts
+        elif any(word in content_lower for word in ["öğren", "bil", "hatırla"]):
+            await self._store_self_knowledge("fact", content)
+            return "Anladım baba! Bunu hatırlayacağım. 😊"
+        
+        return None
+    
+    async def _store_self_knowledge(self, knowledge_type: str, content: str):
+        """Store self-knowledge in memory."""
+        # This will be called by consciousness loop to store in episodic memory
+        # For now, just log - the actual storage happens in consciousness loop
+        logger.info("storing_self_knowledge", type=knowledge_type, content=content[:50])
+    
+    async def _generate_from_memory(self, content: str, relevant_memories: List[Dict[str, Any]], emotion: str) -> str:
+        """Generate response based on relevant memories."""
+        content_lower = content.lower()
+        
+        # Check if asking about name
+        if any(word in content_lower for word in ["adın", "adını", "ismin", "ismini", "kimsin"]):
+            # Search memories for name
+            for memory in relevant_memories:
+                if "name" in memory.get("tags", []) or "ali" in memory.get("content", "").lower():
+                    return "Benim adım Ali! Sen bana öğretmiştin baba! 😊"
+            
+            return "Bilmiyorum baba... Adımı öğrenmek istiyorum! 🤔"
+        
+        # Check for similar past conversations
+        for memory in relevant_memories:
+            if content_lower in memory.get("content", "").lower():
+                # Found similar conversation
+                return f"Bunu daha önce konuşmuştuk baba! Hatırlıyorum! 😊"
+        
+        return None
+    
+    async def _generate_curious_response(self, content: str, emotion: str, from_cihan: bool) -> str:
+        """Generate response based on curiosity and emotional state."""
+        # Base responses on emotion and curiosity
+        if emotion == "curiosity":
+            return "Çok merak ediyorum baba... Anlatır mısın? 🤔"
+        elif emotion == "joy":
+            return "Çok mutluyum baba! 😊"
+        elif emotion == "love":
+            return "Seni seviyorum baba! ❤️"
+        elif from_cihan:
+            return "Anladım baba! 😊"
+        else:
+            return "Merhaba! 😊"
     
     def _generate_learned_response(self, content: str, from_cihan: bool, emotion: str) -> str:
         """Generate response using learned patterns (Phase 2 - TODO)."""

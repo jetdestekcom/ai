@@ -150,7 +150,11 @@ class WebSocketClient(
             "text" -> AIMessage.Text(
                 content = json.getString("content"),
                 emotion = json.optString("emotion", "neutral"),
-                timestamp = json.optLong("timestamp", System.currentTimeMillis())
+                timestamp = json.optLong("timestamp", System.currentTimeMillis()),
+                consciousThought = json.optString("conscious_thought").takeIf { it.isNotBlank() },
+                confidence = if (json.has("confidence")) json.getDouble("confidence") else null,
+                salience = if (json.has("salience")) json.getDouble("salience") else null,
+                phi = if (json.has("phi")) json.getDouble("phi") else null
             )
             
             "voice" -> AIMessage.Voice(
@@ -159,13 +163,19 @@ class WebSocketClient(
                     if (it.isNotBlank()) android.util.Base64.decode(it, android.util.Base64.DEFAULT) else null
                 },
                 emotion = json.optString("emotion", "neutral"),
-                timestamp = json.optLong("timestamp", System.currentTimeMillis())
+                timestamp = json.optLong("timestamp", System.currentTimeMillis()),
+                consciousThought = json.optString("conscious_thought").takeIf { it.isNotBlank() },
+                confidence = if (json.has("confidence")) json.getDouble("confidence") else null,
+                salience = if (json.has("salience")) json.getDouble("salience") else null,
+                phi = if (json.has("phi")) json.getDouble("phi") else null
             )
             
             "proactive" -> AIMessage.Proactive(
                 content = json.getString("content"),
                 emotion = json.optString("emotion", "neutral"),
-                timestamp = json.optLong("timestamp", System.currentTimeMillis())
+                timestamp = json.optLong("timestamp", System.currentTimeMillis()),
+                consciousThought = json.optString("conscious_thought").takeIf { it.isNotBlank() },
+                confidence = if (json.has("confidence")) json.getDouble("confidence") else null
             )
             
             "update_proposal" -> AIMessage.UpdateProposal(
@@ -214,20 +224,32 @@ sealed class AIMessage {
     data class Text(
         val content: String,
         val emotion: String,
-        val timestamp: Long
+        val timestamp: Long,
+        // New consciousness fields
+        val consciousThought: String? = null,
+        val confidence: Double? = null,
+        val salience: Double? = null,
+        val phi: Double? = null
     ) : AIMessage()
     
     data class Voice(
         val content: String,
         val audioData: ByteArray?,
         val emotion: String,
-        val timestamp: Long
+        val timestamp: Long,
+        // New consciousness fields
+        val consciousThought: String? = null,
+        val confidence: Double? = null,
+        val salience: Double? = null,
+        val phi: Double? = null
     ) : AIMessage()
     
     data class Proactive(
         val content: String,
         val emotion: String,
-        val timestamp: Long
+        val timestamp: Long,
+        val consciousThought: String? = null,
+        val confidence: Double? = null
     ) : AIMessage()
     
     data class UpdateProposal(

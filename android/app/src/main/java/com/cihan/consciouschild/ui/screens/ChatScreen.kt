@@ -159,6 +159,7 @@ fun MessageBubble(message: ChatMessage) {
             tonalElevation = 2.dp
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
+                // Main message content
                 Text(
                     text = message.content,
                     style = MaterialTheme.typography.bodyMedium,
@@ -168,12 +169,84 @@ fun MessageBubble(message: ChatMessage) {
                         MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 
-                if (!isFromCihan && message.emotion != "neutral") {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = getEmotionEmoji(message.emotion),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                // AI consciousness metadata
+                if (!isFromCihan) {
+                    // Conscious thought (internal thinking)
+                    message.consciousThought?.let { thought ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "💭",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = thought,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Emotion
+                    if (message.emotion != "neutral") {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = getEmotionEmoji(message.emotion),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    
+                    // Consciousness metrics
+                    if (message.confidence != null || message.phi != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Confidence meter
+                            message.confidence?.let { conf ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "🎯",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = "${(conf * 100).toInt()}%",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                            
+                            // Phi (consciousness measure)
+                            message.phi?.let { phiValue ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "🧠",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = "Φ=${phiValue.toInt()}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -293,6 +366,11 @@ data class ChatMessage(
     val sender: String,  // "Cihan" or "AI"
     val content: String,
     val emotion: String = "neutral",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    // New consciousness fields from Phase 5
+    val consciousThought: String? = null,
+    val confidence: Double? = null,
+    val salience: Double? = null,
+    val phi: Double? = null
 )
 

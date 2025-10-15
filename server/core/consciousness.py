@@ -443,13 +443,17 @@ class Consciousness:
         logger.info("PHASE_3_WORKING_MEMORY")
         
         await self.memory_working.add_to_focus(
+            consciousness_id=self.identity.get_consciousness_id(),
             content=content,
             salience=salience,
+            item_type="input",
             from_cihan=from_cihan
         )
         
         # Get current context from working memory
-        context = await self.memory_working.get_current_context()
+        context = await self.memory_working.get_current_context(
+            self.identity.get_consciousness_id()
+        )
         
         # ============================================================
         # PHASE 4: PREDICTION - What Do I Expect?
@@ -542,12 +546,18 @@ class Consciousness:
         
         self.current_state["confidence"] = meta_eval.get("confidence", 0.5)
         
-        # Ali's neural brain generates Turkish words
-        response_text = await self.neural_brain.generate_from_thought(
-            internal_thought=conscious_thought.content,
-            emotion=current_emotion.get("emotion"),
-            confidence=self.current_state["confidence"],
-            context=context
+        # Ali's neural brain generates Turkish words from CONSCIOUS THOUGHT
+        # This is the key: convert internal conscious thought to Turkish words
+        relevant_memories = context.get("memories", []) if context else []
+        
+        # Use conscious thought as the basis for response generation
+        response_text = await self.neural_brain.generate_from_conscious_thought(
+            conscious_thought=conscious_thought.content,
+            original_input=content,
+            from_cihan=from_cihan,
+            current_emotion=current_emotion.get("emotion", "neutral"),
+            relevant_memories=relevant_memories,
+            confidence=self.current_state["confidence"]
         )
         
         logger.info("ali_generated_response", response=response_text)

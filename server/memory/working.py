@@ -542,7 +542,8 @@ class WorkingMemory:
         consciousness_id: str,
         content: str,
         salience: float = 0.8,
-        item_type: str = "focus"
+        item_type: str = "focus",
+        from_cihan: bool = False
     ):
         """
         Add content to working memory focus.
