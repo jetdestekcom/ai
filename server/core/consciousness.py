@@ -590,10 +590,11 @@ class Consciousness:
         # Store in episodic memory
         await self.memory_episodic.store_conversation_memory(
             consciousness_id=self.identity.get_consciousness_id(),
-            user_said=content,
-            ai_said=response_text,
-            emotion=current_emotion.get("emotion"),
-            context={"conscious_thought": conscious_thought.content}
+            message_from="Cihan" if from_cihan else "Unknown",
+            message_content=content,
+            response_content=response_text,
+            emotions=current_emotion,
+            learned={"conscious_thought": conscious_thought.content}
         )
         
         # Neural brain learns from interaction
