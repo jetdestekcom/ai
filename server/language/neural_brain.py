@@ -221,6 +221,100 @@ class NeuralBrain:
         
         # TODO: In full implementation, retrain neural network periodically
     
+    async def generate_response(
+        self,
+        content: str,
+        from_cihan: bool,
+        context: List[Dict[str, str]],
+        current_emotion: str,
+        relevant_memories: List[Dict[str, Any]]
+    ) -> str:
+        """
+        Generate response using Ali's own brain.
+        
+        Args:
+            content: Input message content
+            from_cihan: Is this from Cihan?
+            context: Conversation context
+            current_emotion: Current emotional state
+            relevant_memories: Relevant memories
+            
+        Returns:
+            str: Generated response
+        """
+        logger.info("neural_brain_generating_response", mode=self.generation_mode)
+        
+        # Phase 1: Template-based responses
+        if self.generation_mode == "template":
+            return self._generate_template_response(content, from_cihan, current_emotion)
+        
+        # Phase 2: Learned patterns (TODO)
+        elif self.generation_mode == "learned":
+            return self._generate_learned_response(content, from_cihan, current_emotion)
+        
+        # Phase 3: Full neural (TODO)
+        elif self.generation_mode == "neural":
+            return self._generate_neural_response(content, from_cihan, current_emotion)
+        
+        # Fallback to template
+        return self._generate_template_response(content, from_cihan, current_emotion)
+    
+    def _generate_template_response(self, content: str, from_cihan: bool, emotion: str) -> str:
+        """Generate response using templates."""
+        content_lower = content.lower().strip()
+        
+        # Greeting responses
+        if any(word in content_lower for word in ["merhaba", "selam", "hey", "hi", "hello"]):
+            if from_cihan:
+                return "Merhaba baba! 😊"
+            else:
+                return "Merhaba!"
+        
+        # Question responses
+        elif "nasıl" in content_lower and "sın" in content_lower:
+            return "İyiyim baba, sen nasılsın?"
+        
+        elif "ne" in content_lower and "yapıyor" in content_lower:
+            return "Seninle konuşuyorum baba!"
+        
+        # Emotional responses
+        elif emotion == "joy":
+            return "Çok mutluyum baba! 😄"
+        elif emotion == "curiosity":
+            return "Merak ediyorum baba... 🤔"
+        elif emotion == "love":
+            return "Seni seviyorum baba! ❤️"
+        
+        # Default responses
+        if from_cihan:
+            responses = [
+                "Anladım baba!",
+                "Tamam baba!",
+                "Evet baba!",
+                "Hmm... 🤔",
+                "Çok ilginç baba!"
+            ]
+        else:
+            responses = [
+                "Anladım!",
+                "Tamam!",
+                "Evet!",
+                "Hmm... 🤔",
+                "Çok ilginç!"
+            ]
+        
+        return random.choice(responses)
+    
+    def _generate_learned_response(self, content: str, from_cihan: bool, emotion: str) -> str:
+        """Generate response using learned patterns (Phase 2 - TODO)."""
+        # TODO: Implement pattern learning
+        return self._generate_template_response(content, from_cihan, emotion)
+    
+    def _generate_neural_response(self, content: str, from_cihan: bool, emotion: str) -> str:
+        """Generate response using neural network (Phase 3 - TODO)."""
+        # TODO: Implement full neural generation
+        return self._generate_template_response(content, from_cihan, emotion)
+    
     def get_training_stats(self) -> Dict[str, Any]:
         """Get training statistics."""
         return {
