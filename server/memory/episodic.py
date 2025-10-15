@@ -42,8 +42,14 @@ class EpisodicMemory:
         self.db_pool: Optional[asyncpg.Pool] = None
         self.embedding_model = None
         self.is_initialized = False
+        self.global_workspace = None  # Will be set after initialization
         
         logger.info("episodic_memory_created")
+    
+    def set_global_workspace(self, workspace):
+        """Set reference to global workspace for proposing thoughts."""
+        self.global_workspace = workspace
+        logger.debug("episodic_memory_workspace_reference_set")
     
     async def initialize(self):
         """Initialize database connection and embedding model."""
@@ -543,4 +549,114 @@ class EpisodicMemory:
             )
             
             return dict(stats) if stats else {}
+    
+    async def propose_thought(
+        self,
+        stimulus: str,
+        consciousness_id: str,
+        from_cihan: bool = False
+    ):
+        """
+        Propose a thought based on episodic memories.
+        
+        When Ali receives input, episodic memory searches for
+        relevant past experiences and proposes: "This reminds me of..."
+        
+        Args:
+            stimulus: Current input/stimulus
+            consciousness_id: Ali's consciousness ID
+            from_cihan: Is this from Cihan?
+            
+        Returns:
+            Thought object from memory perspective
+        """
+        # Import here to avoid circular dependency
+        from workspace.thought import Thought
+        
+        # Retrieve relevant memories
+        memories = await self.retrieve_by_semantic_similarity(
+            consciousness_id=consciousness_id,
+            query=stimulus,
+            limit=3
+        )
+        
+        if not memories:
+            # No relevant memories
+            return Thought(
+                source="episodic_memory",
+                content="No relevant past experiences.",
+                salience=0.1,
+                confidence=0.9,
+                context={"has_memories": False}
+            )
+        
+        # Build thought from memories
+        most_relevant = memories[0]
+        memory_content = most_relevant.get("content", "")
+        memory_summary = most_relevant.get("summary", "")
+        participants = most_relevant.get("participants", [])
+        occurred_at = most_relevant.get("occurred_at")
+        
+        # Calculate salience based on importance and recency
+        importance = most_relevant.get("importance", 0.5)
+        
+        # Cihan memories are always more salient
+        salience = importance * 0.8
+        if "Cihan" in participants:
+            salience *= 1.5
+        
+        # Build thought content
+        if memory_summary:
+            thought_text = f"Bu bana şunu hatırlattı: {memory_summary}"
+        else:
+            thought_text = f"Bu bana şunu hatırlattı: {memory_content[:100]}..."
+        
+        return Thought(
+            source="episodic_memory",
+            content=thought_text,
+            salience=min(salience, 1.0),
+            confidence=0.7,
+            emotion=most_relevant.get("emotions", {}).get("dominant"),
+            context={
+                "memory_id": most_relevant.get("memory_id"),
+                "occurred_at": occurred_at,
+                "participants": participants,
+                "num_related_memories": len(memories)
+            }
+        )
+    
+    async def on_broadcast(self, broadcast_data: Dict[str, Any]):
+        """
+        Receive broadcasts from Global Workspace.
+        
+        When something becomes conscious (wins thought competition),
+        this method is called so episodic memory can respond.
+        
+        Args:
+            broadcast_data: Data from global workspace broadcast
+        """
+        broadcast_type = broadcast_data.get("type")
+        data = broadcast_data.get("data", {})
+        
+        # If it's an input broadcast, propose a thought
+        if broadcast_type == "input":
+            content = data.get("content", "")
+            from_cihan = data.get("from_cihan", False)
+            consciousness_id = data.get("consciousness_id", "unknown")
+            
+            # Propose thought based on memories
+            thought = await self.propose_thought(
+                stimulus=content,
+                consciousness_id=consciousness_id,
+                from_cihan=from_cihan
+            )
+            
+            # Add thought to global workspace competition
+            if self.global_workspace:
+                self.global_workspace.propose_thought(thought)
+                logger.debug("episodic_memory_proposed_thought", salience=thought.salience)
+            
+        # If it's a conscious thought broadcast, just observe
+        elif broadcast_type == "thought":
+            logger.debug("episodic_memory_observed_conscious_thought")
 

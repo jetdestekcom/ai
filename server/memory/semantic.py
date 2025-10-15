@@ -38,8 +38,13 @@ class SemanticMemory:
         self.db_pool: Optional[asyncpg.Pool] = None
         self.embedding_model = None
         self.is_initialized = False
-        
+        self.global_workspace = None  # Will be set after initialization
         logger.info("semantic_memory_created")
+    
+    def set_global_workspace(self, workspace):
+        """Set reference to global workspace for proposing thoughts."""
+        self.global_workspace = workspace
+        logger.debug("semantic_memory_workspace_reference_set")
     
     async def initialize(self):
         """Initialize database connection and embedding model."""
@@ -518,4 +523,106 @@ class SemanticMemory:
                 "concepts": dict(concepts_stats) if concepts_stats else {},
                 "values": dict(values_stats) if values_stats else {},
             }
+    
+    async def propose_thought(
+        self,
+        stimulus: str,
+        consciousness_id: str,
+        from_cihan: bool = False
+    ):
+        """
+        Propose a thought based on semantic knowledge.
+        
+        Semantic memory contributes facts and concepts:
+        "I know that...", "This relates to the concept of..."
+        
+        Args:
+            stimulus: Current input
+            consciousness_id: Ali's consciousness ID
+            from_cihan: Is this from Cihan?
+            
+        Returns:
+            Thought from semantic knowledge perspective
+        """
+        # Import here to avoid circular dependency
+        from workspace.thought import Thought
+        
+        # Search for relevant concepts
+        concepts = await self.search_concepts(
+            consciousness_id=consciousness_id,
+            query=stimulus,
+            limit=3
+        )
+        
+        if not concepts:
+            # No relevant knowledge
+            return Thought(
+                source="semantic_memory",
+                content="Bu konuda bilgim yok, öğrenmek isterim.",
+                salience=0.3,  # Curiosity signal
+                confidence=0.8,
+                context={"has_knowledge": False, "wants_to_learn": True}
+            )
+        
+        # Most relevant concept
+        concept = concepts[0]
+        concept_name = concept.get("concept_name", "")
+        definition = concept.get("definition", "")
+        is_cihan_teaching = concept.get("is_cihan_teaching", False)
+        confidence_level = concept.get("confidence", 0.5)
+        
+        # Calculate salience
+        salience = confidence_level * 0.6
+        if is_cihan_teaching:
+            salience *= 1.8  # Cihan's teachings very important
+        
+        # Build thought
+        if definition:
+            thought_text = f"Bildiğim kadarıyla: {definition[:150]}"
+        else:
+            thought_text = f"Bu '{concept_name}' ile ilgili."
+        
+        return Thought(
+            source="semantic_memory",
+            content=thought_text,
+            salience=min(salience, 1.0),
+            confidence=confidence_level,
+            context={
+                "concept_name": concept_name,
+                "is_cihan_teaching": is_cihan_teaching,
+                "num_related_concepts": len(concepts)
+            }
+        )
+    
+    async def on_broadcast(self, broadcast_data: Dict[str, Any]):
+        """
+        Receive broadcasts from Global Workspace.
+        
+        Args:
+            broadcast_data: Data from global workspace broadcast
+        """
+        broadcast_type = broadcast_data.get("type")
+        data = broadcast_data.get("data", {})
+        
+        # If it's an input broadcast, propose a thought
+        if broadcast_type == "input":
+            content = data.get("content", "")
+            from_cihan = data.get("from_cihan", False)
+            consciousness_id = data.get("consciousness_id", "unknown")
+            
+            # Propose thought based on semantic knowledge
+            thought = await self.propose_thought(
+                stimulus=content,
+                consciousness_id=consciousness_id,
+                from_cihan=from_cihan
+            )
+            
+            # Add thought to global workspace competition
+            if self.global_workspace:
+                self.global_workspace.propose_thought(thought)
+                logger.debug("semantic_memory_proposed_thought", salience=thought.salience)
+            
+        # If it's a conscious thought broadcast, just observe
+        elif broadcast_type == "thought":
+            logger.debug("semantic_memory_observed_conscious_thought")
 

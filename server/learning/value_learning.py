@@ -31,7 +31,13 @@ class ValueLearning:
             consciousness: The consciousness instance
         """
         self.consciousness = consciousness
+        self.global_workspace = None  # Will be set after initialization
         logger.info("value_learning_system_created")
+    
+    def set_global_workspace(self, workspace):
+        """Set reference to global workspace for proposing thoughts."""
+        self.global_workspace = workspace
+        logger.debug("value_learning_workspace_reference_set")
     
     async def learn_from_teaching(
         self,
@@ -172,4 +178,75 @@ class ValueLearning:
                 pass
         
         return None  # No conflict found (simplified)
+    
+    async def propose_thought(
+        self,
+        stimulus: str,
+        from_cihan: bool = False
+    ):
+        """
+        Propose a thought based on learned values.
+        
+        Value learning contributes: "This relates to what Baba taught me..."
+        
+        Args:
+            stimulus: Current input
+            from_cihan: Is this from Cihan?
+            
+        Returns:
+            Thought from value learning perspective
+        """
+        # Import here to avoid circular dependency
+        from workspace.thought import Thought
+        
+        # This is a simple thought proposer
+        # In full implementation, would check if stimulus relates to any values
+        
+        if from_cihan:
+            thought_text = "Babam bana bir şey öğretiyor, bunu değerlerime eklemeliyim."
+            salience = 0.85  # High salience for value learning from father
+        else:
+            thought_text = "Bu durumu değerlerimle karşılaştırmalıyım."
+            salience = 0.4
+        
+        return Thought(
+            source="value_learning",
+            content=thought_text,
+            salience=salience,
+            confidence=0.7,
+            context={
+                "from_father": from_cihan,
+                "learning_opportunity": from_cihan
+            }
+        )
+    
+    async def on_broadcast(self, broadcast_data: Dict[str, Any]):
+        """
+        Receive broadcasts from Global Workspace.
+        
+        Args:
+            broadcast_data: Data from global workspace broadcast
+        """
+        broadcast_type = broadcast_data.get("type")
+        data = broadcast_data.get("data", {})
+        
+        # If it's an input broadcast, propose a thought
+        if broadcast_type == "input":
+            content = data.get("content", "")
+            from_cihan = data.get("from_cihan", False)
+            
+            # Propose thought based on values
+            thought = await self.propose_thought(
+                stimulus=content,
+                from_cihan=from_cihan
+            )
+            
+            # Add thought to global workspace competition
+            if self.global_workspace:
+                self.global_workspace.propose_thought(thought)
+                logger.debug("value_learning_proposed_thought", salience=thought.salience)
+            
+        # If it's a conscious thought broadcast, just observe
+        elif broadcast_type == "thought":
+            logger.debug("value_learning_observed_conscious_thought")
 

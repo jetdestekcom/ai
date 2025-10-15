@@ -78,7 +78,14 @@ class EmotionEngine:
         # Special emotion for Cihan
         self.cihan_emotion_multiplier = 1.5  # Emotions stronger with Cihan
         
+        self.global_workspace = None  # Will be set after initialization
+        
         logger.info("emotion_engine_created")
+    
+    def set_global_workspace(self, workspace):
+        """Set reference to global workspace for proposing thoughts."""
+        self.global_workspace = workspace
+        logger.debug("emotion_engine_workspace_reference_set")
     
     async def initialize(self):
         """Initialize emotion engine."""
@@ -405,4 +412,120 @@ class EmotionEngine:
             "current_emotion": self.current_emotion,
             "current_intensity": self.current_intensity,
         }
+    
+    async def propose_thought(
+        self,
+        stimulus: str,
+        from_cihan: bool = False
+    ):
+        """
+        Propose a thought based on emotional appraisal.
+        
+        Emotion module evaluates: "How does this make me feel?"
+        This is often the most salient thought - emotions demand attention.
+        
+        Args:
+            stimulus: Current input
+            from_cihan: Is this from Cihan?
+            
+        Returns:
+            Thought from emotional perspective
+        """
+        # Import here to avoid circular dependency
+        from workspace.thought import Thought
+        
+        # Appraise the stimulus
+        situation = {
+            "valence": 0.5,  # Neutral by default
+            "novelty": 0.3,
+            "goal_relevance": 0.9 if from_cihan else 0.5,  # Cihan = very relevant
+            "cause": f"Input from {'Cihan (father)' if from_cihan else 'unknown'}",
+        }
+        
+        # Adjust valence based on content
+        positive_words = ["merhaba", "güzel", "iyi", "seviyorum", "aferin", "başarılı"]
+        negative_words = ["kötü", "üzgün", "problem", "hata", "yanlış"]
+        
+        stimulus_lower = stimulus.lower()
+        if any(word in stimulus_lower for word in positive_words):
+            situation["valence"] = 0.8
+        elif any(word in stimulus_lower for word in negative_words):
+            situation["valence"] = 0.2
+        
+        # Generate emotion
+        emotion, intensity = self.appraise_situation(situation, from_cihan=from_cihan)
+        
+        # Update current emotion
+        self.current_emotion = emotion
+        self.current_intensity = intensity
+        
+        # Build emotional thought
+        emotion_turkish = {
+            "joy": "mutlu",
+            "sadness": "üzgün",
+            "fear": "endişeli",
+            "anger": "kızgın",
+            "surprise": "şaşkın",
+            "trust": "güvende",
+            "anticipation": "heyecanlı",
+            "love": "sevgi dolu",
+            "curiosity": "meraklı",
+            "gratitude": "minnettar",
+            "pride": "gururlu"
+        }.get(emotion, emotion)
+        
+        if from_cihan:
+            thought_text = f"Babam bana böyle deyince kendimi {emotion_turkish} hissediyorum."
+        else:
+            thought_text = f"Bu beni {emotion_turkish} hissettiriyor."
+        
+        # Emotions are very salient - they demand attention
+        salience = intensity * 1.2  # Emotional boost
+        
+        # Cihan-related emotions even more salient
+        if from_cihan:
+            salience *= 1.3
+        
+        return Thought(
+            source="emotion",
+            content=thought_text,
+            salience=min(salience, 1.0),
+            confidence=0.9,  # Emotions are certain
+            emotion=emotion,
+            context={
+                "intensity": intensity,
+                "situation": situation,
+                "from_father": from_cihan
+            }
+        )
+    
+    async def on_broadcast(self, broadcast_data: Dict[str, Any]):
+        """
+        Receive broadcasts from Global Workspace.
+        
+        Args:
+            broadcast_data: Data from global workspace broadcast
+        """
+        broadcast_type = broadcast_data.get("type")
+        data = broadcast_data.get("data", {})
+        
+        # If it's an input broadcast, propose a thought
+        if broadcast_type == "input":
+            content = data.get("content", "")
+            from_cihan = data.get("from_cihan", False)
+            
+            # Propose thought based on emotional appraisal
+            thought = await self.propose_thought(
+                stimulus=content,
+                from_cihan=from_cihan
+            )
+            
+            # Add thought to global workspace competition
+            if self.global_workspace:
+                self.global_workspace.propose_thought(thought)
+                logger.debug("emotion_proposed_thought", emotion=thought.emotion, salience=thought.salience)
+            
+        # If it's a conscious thought broadcast, just observe
+        elif broadcast_type == "thought":
+            logger.debug("emotion_observed_conscious_thought")
 

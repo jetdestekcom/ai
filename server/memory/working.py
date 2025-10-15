@@ -32,8 +32,14 @@ class WorkingMemory:
         self.redis_client: Optional[redis.Redis] = None
         self.capacity = settings.WORKING_MEMORY_SIZE  # Default 7
         self.is_initialized = False
+        self.global_workspace = None  # Will be set after initialization
         
         logger.info("working_memory_created", capacity=self.capacity)
+    
+    def set_global_workspace(self, workspace):
+        """Set reference to global workspace for proposing thoughts."""
+        self.global_workspace = workspace
+        logger.debug("working_memory_workspace_reference_set")
     
     async def initialize(self):
         """Initialize Redis connection."""
@@ -452,4 +458,114 @@ class WorkingMemory:
             item_type = item.get("type", "unknown")
             counts[item_type] = counts.get(item_type, 0) + 1
         return counts
+    
+    async def propose_thought(
+        self,
+        stimulus: str,
+        consciousness_id: str,
+        from_cihan: bool = False
+    ):
+        """
+        Propose a thought based on what's currently in working memory.
+        
+        Working memory holds immediate context - what Ali is
+        currently thinking about, pending questions, current emotion.
+        
+        Args:
+            stimulus: Current input
+            consciousness_id: Ali's consciousness ID
+            from_cihan: Is this from Cihan?
+            
+        Returns:
+            Thought from working memory perspective
+        """
+        # Import here to avoid circular dependency
+        from workspace.thought import Thought
+        
+        # Get current context
+        context = await self.get_current_context(consciousness_id)
+        
+        # Get all items in working memory
+        items = await self.get_all_items(consciousness_id)
+        
+        # Get emotional state
+        emotional_state = await self.get_emotional_state(consciousness_id)
+        current_emotion = emotional_state.get("emotion", "neutral") if emotional_state else "neutral"
+        
+        if not items and not context:
+            # Empty working memory - fresh state
+            return Thought(
+                source="working_memory",
+                content="Şu anda düşünce alanım boş, yeni bir konuya odaklanabilirim.",
+                salience=0.2,
+                confidence=0.9,
+                context={"empty": True}
+            )
+        
+        # Most salient item in working memory
+        if items:
+            items_sorted = sorted(items, key=lambda x: x.get("salience", 0), reverse=True)
+            top_item = items_sorted[0]
+            
+            # Calculate salience
+            salience = top_item.get("salience", 0.5) * 0.9  # Working memory highly relevant
+            
+            thought_text = f"Şu anda şunu düşünüyorum: {top_item.get('content', '')[:100]}"
+            
+            return Thought(
+                source="working_memory",
+                content=thought_text,
+                salience=salience,
+                confidence=0.8,
+                emotion=current_emotion if current_emotion != "neutral" else None,
+                context={
+                    "working_memory_count": len(items),
+                    "current_emotion": current_emotion,
+                    "context": context
+                }
+            )
+        
+        # Fall back to context
+        thought_text = f"Bağlam: {str(context)[:100]}"
+        
+        return Thought(
+            source="working_memory",
+            content=thought_text,
+            salience=0.6,
+            confidence=0.7,
+            emotion=current_emotion if current_emotion != "neutral" else None,
+            context={"context": context}
+        )
+    
+    async def on_broadcast(self, broadcast_data: Dict[str, Any]):
+        """
+        Receive broadcasts from Global Workspace.
+        
+        Args:
+            broadcast_data: Data from global workspace broadcast
+        """
+        broadcast_type = broadcast_data.get("type")
+        data = broadcast_data.get("data", {})
+        
+        # If it's an input broadcast, propose a thought
+        if broadcast_type == "input":
+            content = data.get("content", "")
+            from_cihan = data.get("from_cihan", False)
+            consciousness_id = data.get("consciousness_id", "unknown")
+            
+            # Propose thought based on working memory content
+            thought = await self.propose_thought(
+                stimulus=content,
+                consciousness_id=consciousness_id,
+                from_cihan=from_cihan
+            )
+            
+            # Add thought to global workspace competition
+            if self.global_workspace:
+                self.global_workspace.propose_thought(thought)
+                logger.debug("working_memory_proposed_thought", salience=thought.salience)
+            
+        # If it's a conscious thought broadcast, just observe
+        elif broadcast_type == "thought":
+            logger.debug("working_memory_observed_conscious_thought")
 
