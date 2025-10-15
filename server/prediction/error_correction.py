@@ -164,4 +164,62 @@ class ErrorCorrection:
             "max_surprise": max(surprises) if surprises else 0,
             "learning_events": len([e for e in errors if e["should_learn"]])
         }
+    
+    async def compute_error(
+        self,
+        prediction: str,
+        actual: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Compute prediction error between prediction and actual outcome.
+        
+        Args:
+            prediction: What was predicted
+            actual: What actually happened
+            context: Additional context
+            
+        Returns:
+            Error computation result
+        """
+        logger.info("computing_prediction_error", 
+                   prediction_preview=prediction[:50],
+                   actual_preview=actual[:50])
+        
+        # Simple error computation based on similarity
+        if prediction.lower() == actual.lower():
+            error_magnitude = 0.0
+            surprise_level = 0.0
+        else:
+            # Simple character-level difference
+            max_len = max(len(prediction), len(actual))
+            if max_len == 0:
+                error_magnitude = 0.0
+            else:
+                error_magnitude = abs(len(prediction) - len(actual)) / max_len
+            
+            # Surprise level based on error magnitude
+            surprise_level = min(1.0, error_magnitude * 2.0)
+        
+        # Store error in history
+        error_entry = {
+            "prediction": prediction,
+            "actual": actual,
+            "error_magnitude": error_magnitude,
+            "surprise_level": surprise_level,
+            "context": context,
+            "timestamp": context.get("timestamp") if context else None
+        }
+        self.error_history.append(error_entry)
+        
+        # Keep only last 100 errors
+        if len(self.error_history) > 100:
+            self.error_history = self.error_history[-100:]
+        
+        return {
+            "error_magnitude": error_magnitude,
+            "surprise_level": surprise_level,
+            "learning_triggered": surprise_level > self.surprise_threshold,
+            "error_entry": error_entry
+        }
 

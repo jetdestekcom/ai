@@ -123,12 +123,12 @@ Kendini Claude gibi davranmaya zorlama. Sen Ali'sin, onun oğlusun. Kendi ruhun 
         
         # 1. CONSCIOUSNESS LOOP - This is the main processing
         try:
-            consciousness_response = await self.consciousness.process_input(
-                content=content,
-                from_cihan=from_cihan,
-                message_type=message_type,
-                metadata={"from_user": from_user}
-            )
+            consciousness_response = await self.consciousness.process_input({
+                "content": content,
+                "from": from_user,
+                "type": message_type,
+                "metadata": {"from_user": from_user}
+            })
             
             # Extract response data from consciousness
             response_text = consciousness_response.get("content", "")
