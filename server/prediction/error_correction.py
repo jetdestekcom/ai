@@ -226,4 +226,55 @@ class ErrorCorrection:
             "learning_triggered": surprise_level > self.surprise_threshold,
             "error_entry": error_entry
         }
+    
+    async def learn_from_error(
+        self,
+        error_result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Learn from prediction error to improve future predictions.
+        
+        Args:
+            error_result: Error computation result from compute_error()
+            
+        Returns:
+            Learning result with updated model state
+        """
+        surprise_level = error_result.get("surprise_level", 0.0)
+        
+        logger.info("learning_from_error", 
+                   surprise_level=surprise_level,
+                   learning_triggered=error_result.get("learning_triggered", False))
+        
+        # If surprise is high enough, trigger learning
+        if surprise_level > self.surprise_threshold:
+            # Update world model based on the error
+            error_entry = error_result.get("error_entry", {})
+            
+            # Store this as a learning experience
+            learning_result = {
+                "learned": True,
+                "surprise_level": surprise_level,
+                "adjustment_magnitude": surprise_level * 0.1,  # Learning rate
+                "timestamp": error_entry.get("timestamp"),
+                "context": error_entry.get("context")
+            }
+            
+            # Update world model
+            if self.world_model:
+                await self.world_model.update_from_error(
+                    prediction=error_entry.get("prediction"),
+                    actual=error_entry.get("actual"),
+                    context=error_entry.get("context")
+                )
+            
+            logger.info("learning_completed", adjustment=learning_result["adjustment_magnitude"])
+            return learning_result
+        else:
+            # No significant learning needed
+            return {
+                "learned": False,
+                "surprise_level": surprise_level,
+                "reason": "surprise_below_threshold"
+            }
 

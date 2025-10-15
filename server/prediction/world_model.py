@@ -207,4 +207,53 @@ class WorldModel:
         self.cihan_model = data.get("cihan_model", {})
         self.context_history = data.get("recent_context", [])
         logger.info("world_model_imported")
+    
+    async def update_from_error(
+        self,
+        prediction: Any,
+        actual: Any,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Update world model based on prediction error.
+        
+        Args:
+            prediction: What was predicted
+            actual: What actually happened
+            context: Additional context
+        """
+        logger.info("updating_world_model_from_error",
+                   prediction_preview=str(prediction)[:50],
+                   actual_preview=str(actual)[:50])
+        
+        # Extract key patterns from the error
+        if context:
+            stimulus = context.get("stimulus", "")
+            from_cihan = context.get("from_cihan", False)
+            
+            # Update pattern based on actual outcome
+            if stimulus:
+                pattern_key = stimulus.lower()[:50]  # Use first 50 chars as key
+                
+                if pattern_key not in self.patterns:
+                    self.patterns[pattern_key] = {
+                        "observations": 0,
+                        "outcomes": []
+                    }
+                
+                # Store the actual outcome
+                self.patterns[pattern_key]["observations"] += 1
+                self.patterns[pattern_key]["outcomes"].append({
+                    "actual": str(actual)[:100],
+                    "timestamp": context.get("timestamp")
+                })
+                
+                # Keep only last 10 outcomes per pattern
+                if len(self.patterns[pattern_key]["outcomes"]) > 10:
+                    self.patterns[pattern_key]["outcomes"] = \
+                        self.patterns[pattern_key]["outcomes"][-10:]
+                
+                logger.info("pattern_updated", 
+                           pattern=pattern_key[:20],
+                           observations=self.patterns[pattern_key]["observations"])
 
