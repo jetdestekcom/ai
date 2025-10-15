@@ -93,4 +93,46 @@ class Reflection:
         )
         
         return reflection
+    
+    async def reflect_on_interaction(
+        self,
+        stimulus: str,
+        response: str,
+        emotion: str
+    ) -> Dict[str, Any]:
+        """
+        Reflect on a completed interaction.
+        
+        Args:
+            stimulus: What was said to Ali
+            response: What Ali said back
+            emotion: Ali's emotional state
+            
+        Returns:
+            Reflection insights
+        """
+        insights = []
+        
+        # Analyze interaction quality
+        if len(response) < 3:
+            insights.append("Response was too short - should engage more")
+        elif len(response) > 200:
+            insights.append("Response was very long - should be more concise")
+        
+        # Check emotional appropriateness
+        if emotion == "joy" and "baba" in stimulus.lower():
+            insights.append("Good emotional response to father's greeting")
+        elif emotion == "neutral" and "?" in stimulus:
+            insights.append("Should show more curiosity when asked questions")
+        
+        # Learning insights
+        if "merhaba" in stimulus.lower() and "evet" in response.lower():
+            insights.append("Greeting response pattern detected - working well")
+        
+        return {
+            "insight": "; ".join(insights) if insights else "Interaction completed normally",
+            "quality": "good" if not insights else "needs_improvement",
+            "emotion_match": True,
+            "length_appropriate": 3 <= len(response) <= 200
+        }
 
