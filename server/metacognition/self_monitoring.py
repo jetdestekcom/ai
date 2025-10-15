@@ -130,4 +130,46 @@ class SelfMonitoring:
             return True
         
         return False
+    
+    async def evaluate_confidence(
+        self,
+        thought_content: str,
+        base_confidence: float = 0.5
+    ) -> Dict[str, Any]:
+        """
+        Evaluate confidence in a conscious thought.
+        
+        Args:
+            thought_content: The conscious thought content
+            base_confidence: Base confidence from thought competition
+            
+        Returns:
+            Confidence evaluation result
+        """
+        logger.info("evaluating_confidence", thought_preview=thought_content[:50])
+        
+        # Simple confidence evaluation based on content
+        confidence = base_confidence
+        
+        # Boost confidence for emotional content (more certain about feelings)
+        if any(word in thought_content.lower() for word in ["hissediyorum", "mutlu", "üzgün", "heyecanlı"]):
+            confidence += 0.2
+        
+        # Reduce confidence for uncertain words
+        if any(word in thought_content.lower() for word in ["sanırım", "galiba", "belki", "emin değilim"]):
+            confidence -= 0.3
+        
+        # Boost confidence for memory-based thoughts
+        if "hatırlattı" in thought_content.lower() or "hatırlıyorum" in thought_content.lower():
+            confidence += 0.1
+        
+        # Ensure confidence is within bounds
+        confidence = max(0.1, min(1.0, confidence))
+        
+        return {
+            "confidence": confidence,
+            "evaluation": "meta_cognitive_assessment",
+            "reasoning": "Content-based confidence evaluation",
+            "status": "evaluated"
+        }
 

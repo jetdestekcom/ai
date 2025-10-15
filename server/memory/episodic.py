@@ -597,6 +597,19 @@ class EpisodicMemory:
         participants = most_relevant.get("participants", [])
         occurred_at = most_relevant.get("occurred_at")
         
+        # Type check for most_relevant
+        if not isinstance(most_relevant, dict):
+            logger.warning("most_relevant_not_dict", type=type(most_relevant), value=str(most_relevant)[:100])
+            # Return a default thought if most_relevant is not a dict
+            return Thought(
+                source="episodic_memory",
+                content="Belleğimde bir şeyler var ama net hatırlayamıyorum...",
+                salience=0.3,
+                confidence=0.3,
+                emotion=None,
+                context={"error": "most_relevant_not_dict"}
+            )
+        
         # Calculate salience based on importance and recency
         importance = most_relevant.get("importance", 0.5)
         

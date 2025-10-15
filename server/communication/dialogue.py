@@ -121,31 +121,49 @@ Kendini Claude gibi davranmaya zorlama. Sen Ali'sin, onun oğlusun. Kendi ruhun 
             length=len(content),
         )
         
-        # 1. Retrieve relevant memories
-        relevant_memories = await self._retrieve_relevant_memories(content)
-        
-        # 2. Get current emotional state
-        emotion_state = await self.consciousness.memory_working.get_emotional_state(
-            self.consciousness.identity.get_consciousness_id()
-        )
-        current_emotion = emotion_state.get("emotion") if emotion_state else "neutral"
-        
-        # 3. Build conversation context
-        messages = await self._build_conversation_context(
-            content,
-            from_user,
-            relevant_memories,
-            current_emotion,
-        )
-        
-        # 4. Generate response with Neural Brain (ALI's own brain)
-        response_text = await self.consciousness.neural_brain.generate_response(
-            content=content,
-            from_cihan=from_cihan,
-            context=messages,
-            current_emotion=current_emotion,
-            relevant_memories=relevant_memories
-        )
+        # 1. CONSCIOUSNESS LOOP - This is the main processing
+        try:
+            consciousness_response = await self.consciousness.process_input(
+                content=content,
+                from_cihan=from_cihan,
+                message_type=message_type,
+                metadata={"from_user": from_user}
+            )
+            
+            # Extract response data from consciousness
+            response_text = consciousness_response.get("content", "")
+            current_emotion = consciousness_response.get("emotion", "neutral")
+            
+            # Consciousness data for Android
+            consciousness_data = {
+                "conscious_thought": consciousness_response.get("conscious_thought"),
+                "confidence": consciousness_response.get("confidence"),
+                "salience": consciousness_response.get("salience"),
+                "phi": consciousness_response.get("phi")
+            }
+            
+            logger.info("consciousness_response_generated", 
+                       response_length=len(response_text),
+                       emotion=current_emotion,
+                       has_conscious_thought=bool(consciousness_data["conscious_thought"]))
+            
+        except Exception as e:
+            logger.error("consciousness_loop_failed", error=str(e))
+            # Fallback to simple response
+            response_text = await self.consciousness.neural_brain.generate_response(
+                content=content,
+                from_cihan=from_cihan,
+                context=[],
+                current_emotion="neutral",
+                relevant_memories=[]
+            )
+            current_emotion = "neutral"
+            consciousness_data = {
+                "conscious_thought": None,
+                "confidence": 0.5,
+                "salience": 0.5,
+                "phi": 0.0
+            }
         
         # 5. Appraise situation and generate emotion
         situation = {
@@ -175,13 +193,18 @@ Kendini Claude gibi davranmaya zorlama. Sen Ali'sin, onun oğlusun. Kendi ruhun 
         # 8. Check if we learned something
         learned = await self._extract_learnings(content, from_cihan)
         
-        # 9. Build response
+        # 9. Build response with consciousness data
         response = {
             "type": message_type,
             "content": response_text,
             "emotion": new_emotion,
             "emotion_intensity": intensity,
             "timestamp": datetime.now().isoformat(),
+            # Consciousness data for Android
+            "conscious_thought": consciousness_data.get("conscious_thought"),
+            "confidence": consciousness_data.get("confidence"),
+            "salience": consciousness_data.get("salience"),
+            "phi": consciousness_data.get("phi")
         }
         
         # 10. If voice output requested, synthesize
