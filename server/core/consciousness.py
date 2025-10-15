@@ -584,8 +584,7 @@ class Consciousness:
         
         # Learn from error
         await self.error_correction.learn_from_error(
-            error=error,
-            context={"stimulus": content, "prediction": prediction}
+            error_result=error
         )
         
         # Store in episodic memory
