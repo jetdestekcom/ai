@@ -537,6 +537,35 @@ class WorkingMemory:
             context={"context": context}
         )
     
+    async def add_to_focus(
+        self,
+        consciousness_id: str,
+        content: str,
+        salience: float = 0.8,
+        item_type: str = "focus"
+    ):
+        """
+        Add content to working memory focus.
+        
+        This is called by the consciousness loop to add the current
+        focus of attention to working memory.
+        
+        Args:
+            consciousness_id: The AI's consciousness ID
+            content: Content to focus on
+            salience: How salient this content is
+            item_type: Type of focus item
+        """
+        focus_item = {
+            "type": item_type,
+            "content": content,
+            "salience": salience,
+            "source": "attention_focus"
+        }
+        
+        await self.add_item(consciousness_id, focus_item, ttl_seconds=1800)  # 30 min
+        logger.debug("focus_added_to_working_memory", content=content[:50], salience=salience)
+    
     async def on_broadcast(self, broadcast_data: Dict[str, Any]):
         """
         Receive broadcasts from Global Workspace.
