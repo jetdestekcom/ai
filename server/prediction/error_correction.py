@@ -183,20 +183,24 @@ class ErrorCorrection:
             Error computation result
         """
         logger.info("computing_prediction_error", 
-                   prediction_preview=prediction[:50],
-                   actual_preview=actual[:50])
+                   prediction_preview=str(prediction)[:50],
+                   actual_preview=str(actual)[:50])
+        
+        # Convert to strings for comparison
+        pred_str = str(prediction)
+        actual_str = str(actual)
         
         # Simple error computation based on similarity
-        if prediction.lower() == actual.lower():
+        if pred_str.lower() == actual_str.lower():
             error_magnitude = 0.0
             surprise_level = 0.0
         else:
             # Simple character-level difference
-            max_len = max(len(prediction), len(actual))
+            max_len = max(len(pred_str), len(actual_str))
             if max_len == 0:
                 error_magnitude = 0.0
             else:
-                error_magnitude = abs(len(prediction) - len(actual)) / max_len
+                error_magnitude = abs(len(pred_str) - len(actual_str)) / max_len
             
             # Surprise level based on error magnitude
             surprise_level = min(1.0, error_magnitude * 2.0)
