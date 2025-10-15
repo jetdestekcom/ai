@@ -177,7 +177,7 @@ class Vocabulary:
             "examples": examples or [],
             "usage_count": 0
         }
-        logger.info("word_added", word=word, from=learned_from)
+        logger.info("word_added", word=word, learned_from=learned_from)
     
     def get_word(self, word: str) -> Optional[Dict[str, Any]]:
         """Get word data."""
