@@ -113,7 +113,7 @@ class Consciousness:
         
         # Predictive Processing
         self.world_model = WorldModel()
-        self.prediction_engine = PredictionEngine()
+        self.prediction_engine = PredictionEngine(self.world_model)
         self.error_correction = ErrorCorrection()
         
         # Attention System
