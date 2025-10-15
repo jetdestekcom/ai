@@ -17,11 +17,9 @@ Components:
 
 from language.neural_brain import NeuralBrain
 from language.vocabulary import Vocabulary
-from language.language_acquisition import LanguageAcquisition
 
 __all__ = [
     "NeuralBrain",
     "Vocabulary",
-    "LanguageAcquisition",
 ]
 
